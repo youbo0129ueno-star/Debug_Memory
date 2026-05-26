@@ -1,0 +1,16 @@
+{
+  "status": "completed",
+  "changed_files": [
+    "memory/errors/2026-05-26_python-dotenv.md",
+    "memory/errors/2026-05-26_fastapi-cors.md",
+    "memory/errors/2026-05-26_react-undefined-map.md",
+    "templates/error_case.md",
+    "memory/errors/.gitkeep (deleted)"
+  ],
+  "summary": "Created the three specified error case seed files and the error case template verbatim, and removed memory/errors/.gitkeep. The pre-existing templates/.gitkeep was left untouched because it is outside the allowed edit scope.",
+  "tests_run": [
+    "ls -la memory/errors/ templates/ && head -15 memory/errors/2026-05-26_python-dotenv.md: PASS",
+    "git diff --check -- memory/errors templates/error_case.md: PASS",
+    "Frontmatter, ## Error, ## Solution, and memory/errors/.gitkeep absence checks: PASS"
+  ]
+}

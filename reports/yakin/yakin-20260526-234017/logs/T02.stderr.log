@@ -1,0 +1,1130 @@
+Reading prompt from stdin...
+OpenAI Codex v0.133.0
+--------
+workdir: /Users/uenoyuuta/Debug_Memory
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: medium
+reasoning summaries: none
+session id: 019e64c5-eed0-7cb1-a7d6-2136dd6eef19
+--------
+user
+# Role
+
+Fresh Codex implementation worker under Claude Yakin Agent.
+
+# Task
+
+Create 3 sample Markdown error case files and 1 template file for Debug Memory Vol.1.
+
+These files will be the seed data for the search engine. They follow a strict frontmatter + Markdown format described below.
+
+# Acceptance Criteria
+
+- [ ] `memory/errors/2026-05-26_python-dotenv.md` exists with the content below
+- [ ] `memory/errors/2026-05-26_fastapi-cors.md` exists with the content below
+- [ ] `memory/errors/2026-05-26_react-undefined-map.md` exists with the content below
+- [ ] `templates/error_case.md` exists with the template content below
+- [ ] `memory/errors/.gitkeep` is removed (since we now have real files)
+- [ ] All files start with `---` YAML frontmatter and contain `## Error` and `## Solution` sections
+
+# File contents
+
+### memory/errors/2026-05-26_python-dotenv.md
+
+```markdown
+---
+id: err_20260526_001
+title: Pythonでdotenvが読み込めない
+status: resolved
+tags:
+  - python
+  - dotenv
+  - venv
+language: Python
+frameworks:
+  - FastAPI
+created_at: 2026-05-26
+updated_at: 2026-05-26
+---
+
+## Error
+
+```text
+ModuleNotFoundError: No module named 'dotenv'
+```
+
+## Context
+
+venvを作り直したあと、FastAPI起動時に発生。`from dotenv import load_dotenv` の行で落ちる。
+
+## Solution
+
+```bash
+pip install python-dotenv
+```
+
+パッケージ名は `dotenv` ではなく `python-dotenv`。インポート名と pip パッケージ名が違うので注意。
+
+## Notes
+
+仮想環境が違う場合もあるので、`which python` と `pip list` を確認する。VSCode などのIDEで別の venv を指している場合も多い。
+```
+
+### memory/errors/2026-05-26_fastapi-cors.md
+
+```markdown
+---
+id: err_20260526_002
+title: FastAPIでCORSエラーが出る
+status: resolved
+tags:
+  - fastapi
+  - cors
+  - python
+language: Python
+frameworks:
+  - FastAPI
+created_at: 2026-05-26
+updated_at: 2026-05-26
+---
+
+## Error
+
+```text
+Access to fetch at 'http://localhost:8000' from origin 'http://localhost:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+```
+
+## Context
+
+Next.js (port 3000) フロントエンドから FastAPI (port 8000) バックエンドを fetch したときにブラウザのコンソールで発生。
+
+## Solution
+
+CORSMiddleware を FastAPI アプリに追加する:
+
+```python
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
+
+## Notes
+
+本番では `allow_origins=["*"]` は避け、明示的にドメインを列挙する。`allow_credentials=True` のときは `allow_origins=["*"]` が無効になる仕様にも注意。
+```
+
+### memory/errors/2026-05-26_react-undefined-map.md
+
+```markdown
+---
+id: err_20260526_003
+title: ReactでCannot read properties of undefined (reading 'map')
+status: resolved
+tags:
+  - react
+  - javascript
+  - typescript
+language: JavaScript
+frameworks:
+  - React
+created_at: 2026-05-26
+updated_at: 2026-05-26
+---
+
+## Error
+
+```text
+TypeError: Cannot read properties of undefined (reading 'map')
+```
+
+## Context
+
+API から取得したデータを `data.map(...)` でレンダリングしたときに発生。初回レンダリング時はまだ fetch が完了しておらず、`data` が `undefined` のため map が呼べない。
+
+## Solution
+
+3つのアプローチがある:
+
+1. **初期値を空配列にする**
+   ```javascript
+   const [data, setData] = useState([])
+   ```
+
+2. **Optional chaining を使う**
+   ```javascript
+   {data?.map((item) => <Item key={item.id} {...item} />)}
+   ```
+
+3. **Loading状態を確認する**
+   ```javascript
+   if (loading) return <Spinner />
+   if (!data) return null
+   return data.map(...)
+   ```
+
+## Notes
+
+TypeScript を使っているなら `data: Item[] | undefined` のように型を明示すると、コンパイラがガード忘れを検出してくれる。
+```
+
+### templates/error_case.md
+
+```markdown
+---
+id: err_YYYYMMDD_NNN
+title: <短い1行タイトル>
+status: resolved
+tags:
+  - <tag1>
+  - <tag2>
+language: <Python | JavaScript | TypeScript | Go | ...>
+frameworks:
+  - <Framework名>
+created_at: YYYY-MM-DD
+updated_at: YYYY-MM-DD
+---
+
+## Error
+
+```text
+<エラーメッセージそのまま>
+```
+
+## Context
+
+<どういう状況で発生したか>
+
+## Solution
+
+<解決手順>
+
+## Notes
+
+<補足，仮想環境の確認方法，関連リンク等>
+```
+
+# Allowed Edit Scope
+
+- /Users/uenoyuuta/Debug_Memory/memory/errors/*.md
+- /Users/uenoyuuta/Debug_Memory/templates/error_case.md
+- /Users/uenoyuuta/Debug_Memory/memory/errors/.gitkeep (delete)
+
+# Forbidden Edit Scope
+
+- Everything else.
+
+# Constraints
+
+- Write file contents EXACTLY as specified. Do not paraphrase or "improve" the markdown.
+- Do not commit. Claude PM will commit.
+
+# Verification
+
+```
+ls -la memory/errors/ templates/
+head -15 memory/errors/2026-05-26_python-dotenv.md
+```
+
+Expected: 3 .md files in memory/errors/ (no .gitkeep), 1 error_case.md in templates/.
+
+# Final Report Format
+
+```json
+{
+  "status": "completed | partial | failed",
+  "changed_files": [...],
+  "summary": "...",
+  "tests_run": ["...: result"]
+}
+```
+
+codex
+I will add the four specified Markdown artifacts verbatim, remove the placeholder file, then run the requested bounded checks to confirm filenames and frontmatter.
+exec
+/bin/zsh -lc 'pwd && ls -la memory/errors templates 2>/dev/null' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+/Users/uenoyuuta/Debug_Memory
+memory/errors:
+total 8
+drwxr-xr-x  3 uenoyuuta  staff  96 May 26 23:46 .
+drwxr-xr-x  3 uenoyuuta  staff  96 May 26 23:46 ..
+-rw-r--r--  1 uenoyuuta  staff   1 May 26 23:46 .gitkeep
+
+templates:
+total 8
+drwxr-xr-x   3 uenoyuuta  staff   96 May 26 23:46 .
+drwxr-xr-x  14 uenoyuuta  staff  448 May 26 23:50 ..
+-rw-r--r--   1 uenoyuuta  staff    1 May 26 23:46 .gitkeep
+
+exec
+/bin/zsh -lc 'git status --short -- memory/errors templates 2>/dev/null' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+codex
+The target directories contain only placeholder files; `templates/.gitkeep` is pre-existing but outside the permitted delete scope, so I will leave it untouched while adding the requested template and removing only `memory/errors/.gitkeep`.
+apply patch
+patch: completed
+/Users/uenoyuuta/Debug_Memory/memory/errors/.gitkeep
+/Users/uenoyuuta/Debug_Memory/memory/errors/2026-05-26_fastapi-cors.md
+/Users/uenoyuuta/Debug_Memory/memory/errors/2026-05-26_python-dotenv.md
+/Users/uenoyuuta/Debug_Memory/memory/errors/2026-05-26_react-undefined-map.md
+/Users/uenoyuuta/Debug_Memory/templates/error_case.md
+diff --git a/memory/errors/.gitkeep b/memory/errors/.gitkeep
+deleted file mode 100644
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..0000000000000000000000000000000000000000
+--- a/memory/errors/.gitkeep
++++ /dev/null
+@@ -1 +0,0 @@
+-
+diff --git a/memory/errors/2026-05-26_fastapi-cors.md b/memory/errors/2026-05-26_fastapi-cors.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..57485a931454e1e07c5d419d5099fb48ef2b7dc4
+--- /dev/null
++++ b/memory/errors/2026-05-26_fastapi-cors.md
+@@ -0,0 +1,47 @@
++---
++id: err_20260526_002
++title: FastAPIでCORSエラーが出る
++status: resolved
++tags:
++  - fastapi
++  - cors
++  - python
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++Access to fetch at 'http://localhost:8000' from origin 'http://localhost:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
++```
++
++## Context
++
++Next.js (port 3000) フロントエンドから FastAPI (port 8000) バックエンドを fetch したときにブラウザのコンソールで発生。
++
++## Solution
++
++CORSMiddleware を FastAPI アプリに追加する:
++
++```python
++from fastapi import FastAPI
++from fastapi.middleware.cors import CORSMiddleware
++
++app = FastAPI()
++
++app.add_middleware(
++    CORSMiddleware,
++    allow_origins=["http://localhost:3000"],
++    allow_credentials=True,
++    allow_methods=["*"],
++    allow_headers=["*"],
++)
++```
++
++## Notes
++
++本番では `allow_origins=["*"]` は避け、明示的にドメインを列挙する。`allow_credentials=True` のときは `allow_origins=["*"]` が無効になる仕様にも注意。
+diff --git a/memory/errors/2026-05-26_python-dotenv.md b/memory/errors/2026-05-26_python-dotenv.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..89f04cdf0ace836cae8da0bdd8ff910ef4b83273
+--- /dev/null
++++ b/memory/errors/2026-05-26_python-dotenv.md
+@@ -0,0 +1,36 @@
++---
++id: err_20260526_001
++title: Pythonでdotenvが読み込めない
++status: resolved
++tags:
++  - python
++  - dotenv
++  - venv
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++ModuleNotFoundError: No module named 'dotenv'
++```
++
++## Context
++
++venvを作り直したあと、FastAPI起動時に発生。`from dotenv import load_dotenv` の行で落ちる。
++
++## Solution
++
++```bash
++pip install python-dotenv
++```
++
++パッケージ名は `dotenv` ではなく `python-dotenv`。インポート名と pip パッケージ名が違うので注意。
++
++## Notes
++
++仮想環境が違う場合もあるので、`which python` と `pip list` を確認する。VSCode などのIDEで別の venv を指している場合も多い。
+diff --git a/memory/errors/2026-05-26_react-undefined-map.md b/memory/errors/2026-05-26_react-undefined-map.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..63aa10abc96894982c8520066d724332ea7bdd2f
+--- /dev/null
++++ b/memory/errors/2026-05-26_react-undefined-map.md
+@@ -0,0 +1,49 @@
++---
++id: err_20260526_003
++title: ReactでCannot read properties of undefined (reading 'map')
++status: resolved
++tags:
++  - react
++  - javascript
++  - typescript
++language: JavaScript
++frameworks:
++  - React
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++TypeError: Cannot read properties of undefined (reading 'map')
++```
++
++## Context
++
++API から取得したデータを `data.map(...)` でレンダリングしたときに発生。初回レンダリング時はまだ fetch が完了しておらず、`data` が `undefined` のため map が呼べない。
++
++## Solution
++
++3つのアプローチがある:
++
++1. **初期値を空配列にする**
++   ```javascript
++   const [data, setData] = useState([])
++   ```
++
++2. **Optional chaining を使う**
++   ```javascript
++   {data?.map((item) => <Item key={item.id} {...item} />)}
++   ```
++
++3. **Loading状態を確認する**
++   ```javascript
++   if (loading) return <Spinner />
++   if (!data) return null
++   return data.map(...)
++   ```
++
++## Notes
++
++TypeScript を使っているなら `data: Item[] | undefined` のように型を明示すると、コンパイラがガード忘れを検出してくれる。
+diff --git a/templates/error_case.md b/templates/error_case.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..8e7bbdc8ec20ef05c7a22c0f7a86221cf5ec129d
+--- /dev/null
++++ b/templates/error_case.md
+@@ -0,0 +1,31 @@
++---
++id: err_YYYYMMDD_NNN
++title: <短い1行タイトル>
++status: resolved
++tags:
++  - <tag1>
++  - <tag2>
++language: <Python | JavaScript | TypeScript | Go | ...>
++frameworks:
++  - <Framework名>
++created_at: YYYY-MM-DD
++updated_at: YYYY-MM-DD
++---
++
++## Error
++
++```text
++<エラーメッセージそのまま>
++```
++
++## Context
++
++<どういう状況で発生したか>
++
++## Solution
++
++<解決手順>
++
++## Notes
++
++<補足，仮想環境の確認方法，関連リンク等>
+
+diff --git a/memory/errors/.gitkeep b/memory/errors/.gitkeep
+deleted file mode 100644
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..0000000000000000000000000000000000000000
+--- a/memory/errors/.gitkeep
++++ /dev/null
+@@ -1 +0,0 @@
+-
+diff --git a/memory/errors/2026-05-26_fastapi-cors.md b/memory/errors/2026-05-26_fastapi-cors.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..57485a931454e1e07c5d419d5099fb48ef2b7dc4
+--- /dev/null
++++ b/memory/errors/2026-05-26_fastapi-cors.md
+@@ -0,0 +1,47 @@
++---
++id: err_20260526_002
++title: FastAPIでCORSエラーが出る
++status: resolved
++tags:
++  - fastapi
++  - cors
++  - python
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++Access to fetch at 'http://localhost:8000' from origin 'http://localhost:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
++```
++
++## Context
++
++Next.js (port 3000) フロントエンドから FastAPI (port 8000) バックエンドを fetch したときにブラウザのコンソールで発生。
++
++## Solution
++
++CORSMiddleware を FastAPI アプリに追加する:
++
++```python
++from fastapi import FastAPI
++from fastapi.middleware.cors import CORSMiddleware
++
++app = FastAPI()
++
++app.add_middleware(
++    CORSMiddleware,
++    allow_origins=["http://localhost:3000"],
++    allow_credentials=True,
++    allow_methods=["*"],
++    allow_headers=["*"],
++)
++```
++
++## Notes
++
++本番では `allow_origins=["*"]` は避け、明示的にドメインを列挙する。`allow_credentials=True` のときは `allow_origins=["*"]` が無効になる仕様にも注意。
+diff --git a/memory/errors/2026-05-26_python-dotenv.md b/memory/errors/2026-05-26_python-dotenv.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..89f04cdf0ace836cae8da0bdd8ff910ef4b83273
+--- /dev/null
++++ b/memory/errors/2026-05-26_python-dotenv.md
+@@ -0,0 +1,36 @@
++---
++id: err_20260526_001
++title: Pythonでdotenvが読み込めない
++status: resolved
++tags:
++  - python
++  - dotenv
++  - venv
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++ModuleNotFoundError: No module named 'dotenv'
++```
++
++## Context
++
++venvを作り直したあと、FastAPI起動時に発生。`from dotenv import load_dotenv` の行で落ちる。
++
++## Solution
++
++```bash
++pip install python-dotenv
++```
++
++パッケージ名は `dotenv` ではなく `python-dotenv`。インポート名と pip パッケージ名が違うので注意。
++
++## Notes
++
++仮想環境が違う場合もあるので、`which python` と `pip list` を確認する。VSCode などのIDEで別の venv を指している場合も多い。
+diff --git a/memory/errors/2026-05-26_react-undefined-map.md b/memory/errors/2026-05-26_react-undefined-map.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..63aa10abc96894982c8520066d724332ea7bdd2f
+--- /dev/null
++++ b/memory/errors/2026-05-26_react-undefined-map.md
+@@ -0,0 +1,49 @@
++---
++id: err_20260526_003
++title: ReactでCannot read properties of undefined (reading 'map')
++status: resolved
++tags:
++  - react
++  - javascript
++  - typescript
++language: JavaScript
++frameworks:
++  - React
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++TypeError: Cannot read properties of undefined (reading 'map')
++```
++
++## Context
++
++API から取得したデータを `data.map(...)` でレンダリングしたときに発生。初回レンダリング時はまだ fetch が完了しておらず、`data` が `undefined` のため map が呼べない。
++
++## Solution
++
++3つのアプローチがある:
++
++1. **初期値を空配列にする**
++   ```javascript
++   const [data, setData] = useState([])
++   ```
++
++2. **Optional chaining を使う**
++   ```javascript
++   {data?.map((item) => <Item key={item.id} {...item} />)}
++   ```
++
++3. **Loading状態を確認する**
++   ```javascript
++   if (loading) return <Spinner />
++   if (!data) return null
++   return data.map(...)
++   ```
++
++## Notes
++
++TypeScript を使っているなら `data: Item[] | undefined` のように型を明示すると、コンパイラがガード忘れを検出してくれる。
+diff --git a/templates/error_case.md b/templates/error_case.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..8e7bbdc8ec20ef05c7a22c0f7a86221cf5ec129d
+--- /dev/null
++++ b/templates/error_case.md
+@@ -0,0 +1,31 @@
++---
++id: err_YYYYMMDD_NNN
++title: <短い1行タイトル>
++status: resolved
++tags:
++  - <tag1>
++  - <tag2>
++language: <Python | JavaScript | TypeScript | Go | ...>
++frameworks:
++  - <Framework名>
++created_at: YYYY-MM-DD
++updated_at: YYYY-MM-DD
++---
++
++## Error
++
++```text
++<エラーメッセージそのまま>
++```
++
++## Context
++
++<どういう状況で発生したか>
++
++## Solution
++
++<解決手順>
++
++## Notes
++
++<補足，仮想環境の確認方法，関連リンク等>
+
+codex
+The seed cases and template are now written. I am checking the requested directory view and header excerpt, plus structural requirements and patch whitespace, without touching the out-of-scope template placeholder.
+exec
+/bin/zsh -lc 'git status --short -- memory/errors templates/error_case.md templates/.gitkeep' in /Users/uenoyuuta/Debug_Memory
+exec
+/bin/zsh -lc 'ls -la memory/errors/ templates/ && head -15 memory/errors/2026-05-26_python-dotenv.md' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+ D memory/errors/.gitkeep
+?? memory/errors/2026-05-26_fastapi-cors.md
+?? memory/errors/2026-05-26_python-dotenv.md
+?? memory/errors/2026-05-26_react-undefined-map.md
+?? templates/error_case.md
+
+ succeeded in 0ms:
+memory/errors/:
+total 24
+drwxr-xr-x  5 uenoyuuta  staff   160 May 26 23:53 .
+drwxr-xr-x  3 uenoyuuta  staff    96 May 26 23:46 ..
+-rw-r--r--  1 uenoyuuta  staff  1135 May 26 23:53 2026-05-26_fastapi-cors.md
+-rw-r--r--  1 uenoyuuta  staff   769 May 26 23:53 2026-05-26_python-dotenv.md
+-rw-r--r--  1 uenoyuuta  staff  1155 May 26 23:53 2026-05-26_react-undefined-map.md
+
+templates/:
+total 16
+drwxr-xr-x   4 uenoyuuta  staff  128 May 26 23:53 .
+drwxr-xr-x  14 uenoyuuta  staff  448 May 26 23:50 ..
+-rw-r--r--   1 uenoyuuta  staff    1 May 26 23:46 .gitkeep
+-rw-r--r--   1 uenoyuuta  staff  453 May 26 23:53 error_case.md
+---
+id: err_20260526_001
+title: Pythonでdotenvが読み込めない
+status: resolved
+tags:
+  - python
+  - dotenv
+  - venv
+language: Python
+frameworks:
+  - FastAPI
+created_at: 2026-05-26
+updated_at: 2026-05-26
+---
+
+
+exec
+/bin/zsh -lc 'git diff --check -- memory/errors templates/error_case.md && test ! -e memory/errors/.gitkeep && for f in memory/errors/2026-05-26_python-dotenv.md memory/errors/2026-05-26_fastapi-cors.md memory/errors/2026-05-26_react-undefined-map.md templates/error_case.md; do test "$(head -n 1 "$f")" = '"'---' && rg -q '"'^## Error$'"' \""'$f" && rg -q '"'"'^## Solution$'"' \""'$f" || exit 1; done; printf '"'structure and whitespace checks: PASS\\n'" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+structure and whitespace checks: PASS
+
+diff --git a/memory/errors/.gitkeep b/memory/errors/.gitkeep
+deleted file mode 100644
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..0000000000000000000000000000000000000000
+--- a/memory/errors/.gitkeep
++++ /dev/null
+@@ -1 +0,0 @@
+-
+diff --git a/memory/errors/2026-05-26_fastapi-cors.md b/memory/errors/2026-05-26_fastapi-cors.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..57485a931454e1e07c5d419d5099fb48ef2b7dc4
+--- /dev/null
++++ b/memory/errors/2026-05-26_fastapi-cors.md
+@@ -0,0 +1,47 @@
++---
++id: err_20260526_002
++title: FastAPIでCORSエラーが出る
++status: resolved
++tags:
++  - fastapi
++  - cors
++  - python
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++Access to fetch at 'http://localhost:8000' from origin 'http://localhost:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
++```
++
++## Context
++
++Next.js (port 3000) フロントエンドから FastAPI (port 8000) バックエンドを fetch したときにブラウザのコンソールで発生。
++
++## Solution
++
++CORSMiddleware を FastAPI アプリに追加する:
++
++```python
++from fastapi import FastAPI
++from fastapi.middleware.cors import CORSMiddleware
++
++app = FastAPI()
++
++app.add_middleware(
++    CORSMiddleware,
++    allow_origins=["http://localhost:3000"],
++    allow_credentials=True,
++    allow_methods=["*"],
++    allow_headers=["*"],
++)
++```
++
++## Notes
++
++本番では `allow_origins=["*"]` は避け、明示的にドメインを列挙する。`allow_credentials=True` のときは `allow_origins=["*"]` が無効になる仕様にも注意。
+diff --git a/memory/errors/2026-05-26_python-dotenv.md b/memory/errors/2026-05-26_python-dotenv.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..89f04cdf0ace836cae8da0bdd8ff910ef4b83273
+--- /dev/null
++++ b/memory/errors/2026-05-26_python-dotenv.md
+@@ -0,0 +1,36 @@
++---
++id: err_20260526_001
++title: Pythonでdotenvが読み込めない
++status: resolved
++tags:
++  - python
++  - dotenv
++  - venv
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++ModuleNotFoundError: No module named 'dotenv'
++```
++
++## Context
++
++venvを作り直したあと、FastAPI起動時に発生。`from dotenv import load_dotenv` の行で落ちる。
++
++## Solution
++
++```bash
++pip install python-dotenv
++```
++
++パッケージ名は `dotenv` ではなく `python-dotenv`。インポート名と pip パッケージ名が違うので注意。
++
++## Notes
++
++仮想環境が違う場合もあるので、`which python` と `pip list` を確認する。VSCode などのIDEで別の venv を指している場合も多い。
+diff --git a/memory/errors/2026-05-26_react-undefined-map.md b/memory/errors/2026-05-26_react-undefined-map.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..63aa10abc96894982c8520066d724332ea7bdd2f
+--- /dev/null
++++ b/memory/errors/2026-05-26_react-undefined-map.md
+@@ -0,0 +1,49 @@
++---
++id: err_20260526_003
++title: ReactでCannot read properties of undefined (reading 'map')
++status: resolved
++tags:
++  - react
++  - javascript
++  - typescript
++language: JavaScript
++frameworks:
++  - React
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++TypeError: Cannot read properties of undefined (reading 'map')
++```
++
++## Context
++
++API から取得したデータを `data.map(...)` でレンダリングしたときに発生。初回レンダリング時はまだ fetch が完了しておらず、`data` が `undefined` のため map が呼べない。
++
++## Solution
++
++3つのアプローチがある:
++
++1. **初期値を空配列にする**
++   ```javascript
++   const [data, setData] = useState([])
++   ```
++
++2. **Optional chaining を使う**
++   ```javascript
++   {data?.map((item) => <Item key={item.id} {...item} />)}
++   ```
++
++3. **Loading状態を確認する**
++   ```javascript
++   if (loading) return <Spinner />
++   if (!data) return null
++   return data.map(...)
++   ```
++
++## Notes
++
++TypeScript を使っているなら `data: Item[] | undefined` のように型を明示すると、コンパイラがガード忘れを検出してくれる。
+diff --git a/templates/error_case.md b/templates/error_case.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..8e7bbdc8ec20ef05c7a22c0f7a86221cf5ec129d
+--- /dev/null
++++ b/templates/error_case.md
+@@ -0,0 +1,31 @@
++---
++id: err_YYYYMMDD_NNN
++title: <短い1行タイトル>
++status: resolved
++tags:
++  - <tag1>
++  - <tag2>
++language: <Python | JavaScript | TypeScript | Go | ...>
++frameworks:
++  - <Framework名>
++created_at: YYYY-MM-DD
++updated_at: YYYY-MM-DD
++---
++
++## Error
++
++```text
++<エラーメッセージそのまま>
++```
++
++## Context
++
++<どういう状況で発生したか>
++
++## Solution
++
++<解決手順>
++
++## Notes
++
++<補足，仮想環境の確認方法，関連リンク等>
+
+codex
+{
+  "status": "completed",
+  "changed_files": [
+    "memory/errors/2026-05-26_python-dotenv.md",
+    "memory/errors/2026-05-26_fastapi-cors.md",
+    "memory/errors/2026-05-26_react-undefined-map.md",
+    "templates/error_case.md",
+    "memory/errors/.gitkeep (deleted)"
+  ],
+  "summary": "Created the three specified error case seed files and the error case template verbatim, and removed memory/errors/.gitkeep. The pre-existing templates/.gitkeep was left untouched because it is outside the allowed edit scope.",
+  "tests_run": [
+    "ls -la memory/errors/ templates/ && head -15 memory/errors/2026-05-26_python-dotenv.md: PASS",
+    "git diff --check -- memory/errors templates/error_case.md: PASS",
+    "Frontmatter, ## Error, ## Solution, and memory/errors/.gitkeep absence checks: PASS"
+  ]
+}
+diff --git a/memory/errors/.gitkeep b/memory/errors/.gitkeep
+deleted file mode 100644
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..0000000000000000000000000000000000000000
+--- a/memory/errors/.gitkeep
++++ /dev/null
+@@ -1 +0,0 @@
+-
+diff --git a/memory/errors/2026-05-26_fastapi-cors.md b/memory/errors/2026-05-26_fastapi-cors.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..57485a931454e1e07c5d419d5099fb48ef2b7dc4
+--- /dev/null
++++ b/memory/errors/2026-05-26_fastapi-cors.md
+@@ -0,0 +1,47 @@
++---
++id: err_20260526_002
++title: FastAPIでCORSエラーが出る
++status: resolved
++tags:
++  - fastapi
++  - cors
++  - python
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++Access to fetch at 'http://localhost:8000' from origin 'http://localhost:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
++```
++
++## Context
++
++Next.js (port 3000) フロントエンドから FastAPI (port 8000) バックエンドを fetch したときにブラウザのコンソールで発生。
++
++## Solution
++
++CORSMiddleware を FastAPI アプリに追加する:
++
++```python
++from fastapi import FastAPI
++from fastapi.middleware.cors import CORSMiddleware
++
++app = FastAPI()
++
++app.add_middleware(
++    CORSMiddleware,
++    allow_origins=["http://localhost:3000"],
++    allow_credentials=True,
++    allow_methods=["*"],
++    allow_headers=["*"],
++)
++```
++
++## Notes
++
++本番では `allow_origins=["*"]` は避け、明示的にドメインを列挙する。`allow_credentials=True` のときは `allow_origins=["*"]` が無効になる仕様にも注意。
+diff --git a/memory/errors/2026-05-26_python-dotenv.md b/memory/errors/2026-05-26_python-dotenv.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..89f04cdf0ace836cae8da0bdd8ff910ef4b83273
+--- /dev/null
++++ b/memory/errors/2026-05-26_python-dotenv.md
+@@ -0,0 +1,36 @@
++---
++id: err_20260526_001
++title: Pythonでdotenvが読み込めない
++status: resolved
++tags:
++  - python
++  - dotenv
++  - venv
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++ModuleNotFoundError: No module named 'dotenv'
++```
++
++## Context
++
++venvを作り直したあと、FastAPI起動時に発生。`from dotenv import load_dotenv` の行で落ちる。
++
++## Solution
++
++```bash
++pip install python-dotenv
++```
++
++パッケージ名は `dotenv` ではなく `python-dotenv`。インポート名と pip パッケージ名が違うので注意。
++
++## Notes
++
++仮想環境が違う場合もあるので、`which python` と `pip list` を確認する。VSCode などのIDEで別の venv を指している場合も多い。
+diff --git a/memory/errors/2026-05-26_react-undefined-map.md b/memory/errors/2026-05-26_react-undefined-map.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..63aa10abc96894982c8520066d724332ea7bdd2f
+--- /dev/null
++++ b/memory/errors/2026-05-26_react-undefined-map.md
+@@ -0,0 +1,49 @@
++---
++id: err_20260526_003
++title: ReactでCannot read properties of undefined (reading 'map')
++status: resolved
++tags:
++  - react
++  - javascript
++  - typescript
++language: JavaScript
++frameworks:
++  - React
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++TypeError: Cannot read properties of undefined (reading 'map')
++```
++
++## Context
++
++API から取得したデータを `data.map(...)` でレンダリングしたときに発生。初回レンダリング時はまだ fetch が完了しておらず、`data` が `undefined` のため map が呼べない。
++
++## Solution
++
++3つのアプローチがある:
++
++1. **初期値を空配列にする**
++   ```javascript
++   const [data, setData] = useState([])
++   ```
++
++2. **Optional chaining を使う**
++   ```javascript
++   {data?.map((item) => <Item key={item.id} {...item} />)}
++   ```
++
++3. **Loading状態を確認する**
++   ```javascript
++   if (loading) return <Spinner />
++   if (!data) return null
++   return data.map(...)
++   ```
++
++## Notes
++
++TypeScript を使っているなら `data: Item[] | undefined` のように型を明示すると、コンパイラがガード忘れを検出してくれる。
+diff --git a/templates/error_case.md b/templates/error_case.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..8e7bbdc8ec20ef05c7a22c0f7a86221cf5ec129d
+--- /dev/null
++++ b/templates/error_case.md
+@@ -0,0 +1,31 @@
++---
++id: err_YYYYMMDD_NNN
++title: <短い1行タイトル>
++status: resolved
++tags:
++  - <tag1>
++  - <tag2>
++language: <Python | JavaScript | TypeScript | Go | ...>
++frameworks:
++  - <Framework名>
++created_at: YYYY-MM-DD
++updated_at: YYYY-MM-DD
++---
++
++## Error
++
++```text
++<エラーメッセージそのまま>
++```
++
++## Context
++
++<どういう状況で発生したか>
++
++## Solution
++
++<解決手順>
++
++## Notes
++
++<補足，仮想環境の確認方法，関連リンク等>
+
+tokens used
+16,961
