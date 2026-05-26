@@ -1,0 +1,15 @@
+[ai/yakin-20260526-234017 d8957a2] feat(T05): signature.py with regex-based feature extraction + tests
+ 14 files changed, 2120 insertions(+)
+ create mode 100644 reports/yakin/yakin-20260526-234017/codex-reports/T05-report.md
+ create mode 100644 reports/yakin/yakin-20260526-234017/diffs/T05.changed-files
+ create mode 100644 reports/yakin/yakin-20260526-234017/diffs/T05.diffstat
+ create mode 100644 reports/yakin/yakin-20260526-234017/handoffs/T05-to-codex.md
+ create mode 100644 reports/yakin/yakin-20260526-234017/handoffs/T06-to-codex.md
+ create mode 100644 reports/yakin/yakin-20260526-234017/handoffs/T07-to-codex.md
+ create mode 100644 reports/yakin/yakin-20260526-234017/handoffs/T08-to-codex.md
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T04.commit.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T04.push.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T05.stderr.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T05.stdout.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T05.verify.log
+ create mode 100644 tests/test_signature.py
