@@ -1,0 +1,1543 @@
+Reading prompt from stdin...
+OpenAI Codex v0.133.0
+--------
+workdir: /Users/uenoyuuta/Debug_Memory
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: medium
+reasoning summaries: none
+session id: 019e64da-ccd5-7d30-88ad-d847511163db
+--------
+user
+# Role
+
+Fresh Codex implementation worker under Claude Yakin Agent.
+
+# Task
+
+Implement `debug_memory/signature.py` and `tests/test_signature.py`.
+
+This module extracts searchable features from error log text. It's used both at search time (for the query) and at parse time (against the `## Error` body of stored cases).
+
+# Acceptance Criteria
+
+- [ ] `extract_signature(text: str) -> ErrorSignature` function exists in `debug_memory/signature.py`
+- [ ] Extracts:
+  - `exception_names`: things matching `\b[A-Za-z_][A-Za-z0-9_]*(?:Error|Exception|Warning)\b` (e.g., `ModuleNotFoundError`, `TypeError`)
+  - `quoted_terms`: contents inside `'...'` and `"..."` (e.g., from `No module named 'dotenv'` → `dotenv`)
+  - `package_names`: lowercase-ish identifiers that look like package names — tokens like `python-dotenv`, `fastapi`, `react`, `dotenv`, etc. Heuristic: ASCII-lowercase words possibly with `-` or `_`, length >= 3, that appear in quoted_terms OR appear after `install`/`from`/`import` keywords
+  - `commands`: full lines matching `(?:npm|pnpm|yarn|pip|poetry|python|node|docker|git|uv|pytest)\s+[^\n]+` (preserve the command + args)
+  - `keywords`: general informative tokens, length >= 4, lowercase, excluding very common English stop words and the items already in other lists
+- [ ] Duplicates in any list are removed (preserve insertion order)
+- [ ] Case folding: matching is case-insensitive where it makes sense, but `exception_names` preserves original casing
+- [ ] Stop-word filter for keywords: at least exclude `the`, `and`, `with`, `from`, `this`, `that`, `have`, `cannot`, `please`, `could`, `would`, `error`, `failed` (extend as needed)
+- [ ] `tests/test_signature.py` includes:
+  - `ModuleNotFoundError` is extracted as an exception_name
+  - `'dotenv'` is extracted as a quoted_term
+  - `TypeError` is extracted (from React error message)
+  - `npm install foo` is extracted as a command
+  - `pip install python-dotenv` is extracted as a command
+  - duplicates are deduplicated
+- [ ] `pytest tests/test_signature.py -v` exits 0
+
+# Implementation hints
+
+```python
+import re
+
+EXCEPTION_PATTERN = re.compile(r"\b[A-Za-z_][A-Za-z0-9_]*(?:Error|Exception|Warning)\b")
+QUOTED_PATTERN = re.compile(r"['\"]([^'\"\n]+)['\"]")
+COMMAND_PATTERN = re.compile(r"(?:^|\s)((?:npm|pnpm|yarn|pip|poetry|python|node|docker|git|uv|pytest)\s+[^\n]+)", re.MULTILINE)
+```
+
+Use a small helper to dedupe while preserving order:
+```python
+def _dedup(items):
+    seen = set()
+    out = []
+    for x in items:
+        key = x.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(x)
+    return out
+```
+
+# Allowed Edit Scope
+
+- /Users/uenoyuuta/Debug_Memory/debug_memory/signature.py
+- /Users/uenoyuuta/Debug_Memory/tests/test_signature.py
+
+# Forbidden Edit Scope
+
+- Everything else.
+
+# Verification
+
+```
+cd /Users/uenoyuuta/Debug_Memory
+source .venv/bin/activate
+pytest tests/test_signature.py -v
+deactivate
+```
+
+Expected: all tests pass.
+
+# Final Report Format
+
+```json
+{"status": "completed", "changed_files": [...], "summary": "...", "tests_run": ["pytest tests/test_signature.py: <N passed>"]}
+```
+
+codex
+I’ll implement the signature extractor and its focused tests within the two permitted files. I’ll first inspect the existing package and test conventions, then patch the module/tests and run the requested pytest target.
+exec
+/bin/zsh -lc 'git status --short -- debug_memory/signature.py tests/test_signature.py' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+exec
+/bin/zsh -lc "pwd && rg --files -g 'signature.py' -g 'test_signature.py' -g '*.py' debug_memory tests | sed -n '1,80p'" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+/Users/uenoyuuta/Debug_Memory
+tests/__init__.py
+tests/test_parser.py
+debug_memory/signature.py
+debug_memory/search.py
+debug_memory/rag.py
+debug_memory/cli.py
+debug_memory/parser.py
+debug_memory/__init__.py
+debug_memory/render.py
+debug_memory/models.py
+
+codex
+The target files are not currently modified. I found an existing `signature.py` plus the shared models and parser tests, so I’m reading those narrow interfaces before making the scoped edit.
+exec
+/bin/zsh -lc "sed -n '1,240p' debug_memory/signature.py" in /Users/uenoyuuta/Debug_Memory
+exec
+/bin/zsh -lc "test -e tests/test_signature.py && sed -n '1,240p' tests/test_signature.py || true; sed -n '1,220p' debug_memory/search.py" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+ succeeded in 0ms:
+exec
+/bin/zsh -lc "sed -n '1,240p' debug_memory/models.py && sed -n '1,220p' tests/test_parser.py" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass
+class ErrorCase:
+    id: str
+    title: str
+    status: str
+    tags: list[str]
+    language: str | None
+    frameworks: list[str]
+    error: str
+    context: str
+    solution: str
+    notes: str
+    path: Path
+
+
+@dataclass
+class ErrorSignature:
+    raw_text: str
+    exception_names: list[str]
+    quoted_terms: list[str]
+    package_names: list[str]
+    commands: list[str]
+    keywords: list[str]
+
+
+@dataclass
+class SearchResult:
+    case: ErrorCase
+    score: float
+    reasons: list[str]
+from pathlib import Path
+
+import pytest
+
+from debug_memory.parser import load_error_cases, parse_error_case
+
+
+ERRORS_DIR = Path(__file__).parent.parent / "memory" / "errors"
+
+
+def _write_case(tmp_path: Path, body: str, frontmatter: str | None = None) -> Path:
+    metadata = frontmatter or """\
+id: err_test
+title: Test error
+status: resolved
+tags:
+  - python
+  - parsing
+"""
+    path = tmp_path / "case.md"
+    path.write_text(f"---\n{metadata}---\n\n{body}", encoding="utf-8")
+    return path
+
+
+def test_frontmatter_is_parsed(tmp_path: Path) -> None:
+    path = _write_case(
+        tmp_path,
+        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
+    )
+
+    case = parse_error_case(path)
+
+    assert case.id == "err_test"
+    assert case.title == "Test error"
+    assert case.status == "resolved"
+    assert case.tags == ["python", "parsing"]
+
+
+def test_error_content_is_extracted_and_preserves_code_fences(tmp_path: Path) -> None:
+    path = _write_case(
+        tmp_path,
+        "## Error\n\n```text\nModuleNotFoundError: dotenv\n```\n\n## Solution\n\ninstall it\n",
+    )
+
+    assert parse_error_case(path).error == "```text\nModuleNotFoundError: dotenv\n```"
+
+
+def test_solution_content_is_extracted(tmp_path: Path) -> None:
+    path = _write_case(
+        tmp_path,
+        "## Error\n\nbroken\n\n## Solution\n\n```bash\npip install python-dotenv\n```\n",
+    )
+
+    assert parse_error_case(path).solution == "```bash\npip install python-dotenv\n```"
+
+
+def test_missing_optional_sections_and_metadata_use_defaults(tmp_path: Path) -> None:
+    path = _write_case(
+        tmp_path,
+        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
+        frontmatter="id: err_minimal\ntitle: Minimal\nstatus: open\n",
+    )
+
+    case = parse_error_case(path)
+
+    assert case.context == ""
+    assert case.notes == ""
+    assert case.tags == []
+    assert case.language is None
+    assert case.frameworks == []
+
+
+@pytest.mark.parametrize("section", ["Error", "Solution"])
+def test_missing_required_section_raises_value_error(tmp_path: Path, section: str) -> None:
+    included_section = "Solution" if section == "Error" else "Error"
+    path = _write_case(tmp_path, f"## {included_section}\n\ncontent\n")
+
+    with pytest.raises(ValueError, match=rf"## {section}"):
+        parse_error_case(path)
+
+
+@pytest.mark.parametrize("field", ["id", "title", "status"])
+def test_missing_required_frontmatter_field_raises_value_error(
+    tmp_path: Path, field: str
+) -> None:
+    fields = {"id": "err_test", "title": "Test error", "status": "resolved"}
+    del fields[field]
+    frontmatter = "".join(f"{key}: {value}\n" for key, value in fields.items())
+    path = _write_case(
+        tmp_path,
+        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
+        frontmatter=frontmatter,
+    )
+
+    with pytest.raises(ValueError, match=field):
+        parse_error_case(path)
+
+
+def test_all_sample_error_files_parse() -> None:
+    cases = load_error_cases(ERRORS_DIR)
+
+    assert len(cases) == 3
+    assert {case.id for case in cases} == {
+        "err_20260526_001",
+        "err_20260526_002",
+        "err_20260526_003",
+    }
+
+codex
+`ErrorSignature` is already defined in `models.py`, while `signature.py` and its test file are empty. I’m adding regex-based extraction with case-insensitive ordered deduplication, conservative package detection, and tests for the required Python/React/command and duplicate cases.
+apply patch
+patch: completed
+/Users/uenoyuuta/Debug_Memory/debug_memory/signature.py
+/Users/uenoyuuta/Debug_Memory/tests/test_signature.py
+diff --git a/debug_memory/signature.py b/debug_memory/signature.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..eb59e1f8e48216fb0a437aec6df4d86ee461dabf
+--- a/debug_memory/signature.py
++++ b/debug_memory/signature.py
+@@ -1 +1,93 @@
++from __future__ import annotations
++
++import re
++from collections.abc import Iterable
++
++from .models import ErrorSignature
++
++
++EXCEPTION_PATTERN = re.compile(
++    r"\b[A-Za-z_][A-Za-z0-9_]*(?:Error|Exception|Warning)\b"
++)
++QUOTED_PATTERN = re.compile(r"""['"]([^'"\n]+)['"]""")
++COMMAND_PATTERN = re.compile(
++    r"(?:^|\s)((?:npm|pnpm|yarn|pip|poetry|python|node|docker|git|uv|pytest)"
++    r"\s+[^\n]+)",
++    re.IGNORECASE | re.MULTILINE,
++)
++PACKAGE_PATTERN = re.compile(r"^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$")
++PACKAGE_CONTEXT_PATTERN = re.compile(
++    r"\b(?:install|from|import)\s+([a-z][a-z0-9]*(?:[-_][a-z0-9]+)*)\b",
++    re.IGNORECASE,
++)
++TOKEN_PATTERN = re.compile(r"\b[A-Za-z][A-Za-z0-9_-]*\b")
++
++STOP_WORDS = {
++    "cannot",
++    "could",
++    "error",
++    "failed",
++    "from",
++    "have",
++    "please",
++    "that",
++    "the",
++    "this",
++    "with",
++    "would",
++    "after",
++    "before",
++    "into",
++    "module",
++    "named",
++}
++
++
++def _dedup(items: Iterable[str]) -> list[str]:
++    seen: set[str] = set()
++    out: list[str] = []
++    for item in items:
++        key = item.casefold()
++        if key in seen:
++            continue
++        seen.add(key)
++        out.append(item)
++    return out
++
++
++def extract_signature(text: str) -> ErrorSignature:
++    """Extract ordered, searchable terms from error or query text."""
++    exception_names = _dedup(EXCEPTION_PATTERN.findall(text))
++    quoted_terms = _dedup(QUOTED_PATTERN.findall(text))
++    commands = _dedup(match.group(1).strip() for match in COMMAND_PATTERN.finditer(text))
++
++    package_candidates = [
++        term.casefold()
++        for term in quoted_terms
++        if PACKAGE_PATTERN.fullmatch(term.casefold())
++    ]
++    package_candidates.extend(
++        match.group(1).casefold() for match in PACKAGE_CONTEXT_PATTERN.finditer(text)
++    )
++    package_names = _dedup(package_candidates)
++
++    represented_tokens: set[str] = set()
++    for item in [*exception_names, *quoted_terms, *package_names, *commands]:
++        represented_tokens.update(token.casefold() for token in TOKEN_PATTERN.findall(item))
+ 
++    keywords = _dedup(
++        token.casefold()
++        for token in TOKEN_PATTERN.findall(text)
++        if len(token) >= 4
++        and token.casefold() not in STOP_WORDS
++        and token.casefold() not in represented_tokens
++    )
++
++    return ErrorSignature(
++        raw_text=text,
++        exception_names=exception_names,
++        quoted_terms=quoted_terms,
++        package_names=package_names,
++        commands=commands,
++        keywords=keywords,
++    )
+diff --git a/tests/test_signature.py b/tests/test_signature.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..cce2a4e6f5adf2f66018e3abf6d07cb8b88771ea
+--- /dev/null
++++ b/tests/test_signature.py
+@@ -0,0 +1,38 @@
++from debug_memory.signature import extract_signature
++
++
++def test_extracts_python_missing_package_signature() -> None:
++    signature = extract_signature(
++        "ModuleNotFoundError: No module named 'dotenv'\n"
++        "pip install python-dotenv"
++    )
++
++    assert signature.exception_names == ["ModuleNotFoundError"]
++    assert signature.quoted_terms == ["dotenv"]
++    assert signature.package_names == ["dotenv", "python-dotenv"]
++    assert signature.commands == ["pip install python-dotenv"]
++
++
++def test_extracts_react_type_error_and_npm_command() -> None:
++    signature = extract_signature(
++        "TypeError: Cannot read properties of undefined in react\n"
++        "npm install foo"
++    )
++
++    assert signature.exception_names == ["TypeError"]
++    assert signature.package_names == ["foo"]
++    assert signature.commands == ["npm install foo"]
++    assert "properties" in signature.keywords
++
++
++def test_deduplicates_features_case_insensitively_preserving_first_form() -> None:
++    signature = extract_signature(
++        "TypeError TypeError typeerror\n"
++        "No module named 'dotenv'; No module named \"DOTENV\"\n"
++        "pip install python-dotenv\nPIP install PYTHON-DOTENV"
++    )
++
++    assert signature.exception_names == ["TypeError"]
++    assert signature.quoted_terms == ["dotenv"]
++    assert signature.package_names == ["dotenv", "python-dotenv"]
++    assert signature.commands == ["pip install python-dotenv"]
+
+diff --git a/debug_memory/signature.py b/debug_memory/signature.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..eb59e1f8e48216fb0a437aec6df4d86ee461dabf
+--- a/debug_memory/signature.py
++++ b/debug_memory/signature.py
+@@ -1 +1,93 @@
++from __future__ import annotations
++
++import re
++from collections.abc import Iterable
++
++from .models import ErrorSignature
++
++
++EXCEPTION_PATTERN = re.compile(
++    r"\b[A-Za-z_][A-Za-z0-9_]*(?:Error|Exception|Warning)\b"
++)
++QUOTED_PATTERN = re.compile(r"""['"]([^'"\n]+)['"]""")
++COMMAND_PATTERN = re.compile(
++    r"(?:^|\s)((?:npm|pnpm|yarn|pip|poetry|python|node|docker|git|uv|pytest)"
++    r"\s+[^\n]+)",
++    re.IGNORECASE | re.MULTILINE,
++)
++PACKAGE_PATTERN = re.compile(r"^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$")
++PACKAGE_CONTEXT_PATTERN = re.compile(
++    r"\b(?:install|from|import)\s+([a-z][a-z0-9]*(?:[-_][a-z0-9]+)*)\b",
++    re.IGNORECASE,
++)
++TOKEN_PATTERN = re.compile(r"\b[A-Za-z][A-Za-z0-9_-]*\b")
++
++STOP_WORDS = {
++    "cannot",
++    "could",
++    "error",
++    "failed",
++    "from",
++    "have",
++    "please",
++    "that",
++    "the",
++    "this",
++    "with",
++    "would",
++    "after",
++    "before",
++    "into",
++    "module",
++    "named",
++}
++
++
++def _dedup(items: Iterable[str]) -> list[str]:
++    seen: set[str] = set()
++    out: list[str] = []
++    for item in items:
++        key = item.casefold()
++        if key in seen:
++            continue
++        seen.add(key)
++        out.append(item)
++    return out
++
++
++def extract_signature(text: str) -> ErrorSignature:
++    """Extract ordered, searchable terms from error or query text."""
++    exception_names = _dedup(EXCEPTION_PATTERN.findall(text))
++    quoted_terms = _dedup(QUOTED_PATTERN.findall(text))
++    commands = _dedup(match.group(1).strip() for match in COMMAND_PATTERN.finditer(text))
++
++    package_candidates = [
++        term.casefold()
++        for term in quoted_terms
++        if PACKAGE_PATTERN.fullmatch(term.casefold())
++    ]
++    package_candidates.extend(
++        match.group(1).casefold() for match in PACKAGE_CONTEXT_PATTERN.finditer(text)
++    )
++    package_names = _dedup(package_candidates)
++
++    represented_tokens: set[str] = set()
++    for item in [*exception_names, *quoted_terms, *package_names, *commands]:
++        represented_tokens.update(token.casefold() for token in TOKEN_PATTERN.findall(item))
+ 
++    keywords = _dedup(
++        token.casefold()
++        for token in TOKEN_PATTERN.findall(text)
++        if len(token) >= 4
++        and token.casefold() not in STOP_WORDS
++        and token.casefold() not in represented_tokens
++    )
++
++    return ErrorSignature(
++        raw_text=text,
++        exception_names=exception_names,
++        quoted_terms=quoted_terms,
++        package_names=package_names,
++        commands=commands,
++        keywords=keywords,
++    )
+diff --git a/tests/test_signature.py b/tests/test_signature.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..cce2a4e6f5adf2f66018e3abf6d07cb8b88771ea
+--- /dev/null
++++ b/tests/test_signature.py
+@@ -0,0 +1,38 @@
++from debug_memory.signature import extract_signature
++
++
++def test_extracts_python_missing_package_signature() -> None:
++    signature = extract_signature(
++        "ModuleNotFoundError: No module named 'dotenv'\n"
++        "pip install python-dotenv"
++    )
++
++    assert signature.exception_names == ["ModuleNotFoundError"]
++    assert signature.quoted_terms == ["dotenv"]
++    assert signature.package_names == ["dotenv", "python-dotenv"]
++    assert signature.commands == ["pip install python-dotenv"]
++
++
++def test_extracts_react_type_error_and_npm_command() -> None:
++    signature = extract_signature(
++        "TypeError: Cannot read properties of undefined in react\n"
++        "npm install foo"
++    )
++
++    assert signature.exception_names == ["TypeError"]
++    assert signature.package_names == ["foo"]
++    assert signature.commands == ["npm install foo"]
++    assert "properties" in signature.keywords
++
++
++def test_deduplicates_features_case_insensitively_preserving_first_form() -> None:
++    signature = extract_signature(
++        "TypeError TypeError typeerror\n"
++        "No module named 'dotenv'; No module named \"DOTENV\"\n"
++        "pip install python-dotenv\nPIP install PYTHON-DOTENV"
++    )
++
++    assert signature.exception_names == ["TypeError"]
++    assert signature.quoted_terms == ["dotenv"]
++    assert signature.package_names == ["dotenv", "python-dotenv"]
++    assert signature.commands == ["pip install python-dotenv"]
+
+codex
+The implementation now returns the shared dataclass, extracts each requested feature group, and suppresses overlap in keywords by tokenizing features already captured elsewhere. I’m running the requested isolated test target through the repository’s output-distilling wrapper.
+exec
+/bin/zsh -lc 'git diff --stat -- debug_memory/signature.py tests/test_signature.py && git diff --check -- debug_memory/signature.py tests/test_signature.py' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+ debug_memory/signature.py | 92 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 92 insertions(+)
+
+exec
+/bin/zsh -lc 'source .venv/bin/activate && codex-distill -p "Did tests/test_signature.py pass? Return PASS with the passed-test count, or FAIL with failing test names and exact assertion/error locations." -- pytest tests/test_signature.py -v; status=$?; deactivate; exit $status' in /Users/uenoyuuta/Debug_Memory
+diff --git a/debug_memory/signature.py b/debug_memory/signature.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..eb59e1f8e48216fb0a437aec6df4d86ee461dabf
+--- a/debug_memory/signature.py
++++ b/debug_memory/signature.py
+@@ -1 +1,93 @@
++from __future__ import annotations
++
++import re
++from collections.abc import Iterable
++
++from .models import ErrorSignature
++
++
++EXCEPTION_PATTERN = re.compile(
++    r"\b[A-Za-z_][A-Za-z0-9_]*(?:Error|Exception|Warning)\b"
++)
++QUOTED_PATTERN = re.compile(r"""['"]([^'"\n]+)['"]""")
++COMMAND_PATTERN = re.compile(
++    r"(?:^|\s)((?:npm|pnpm|yarn|pip|poetry|python|node|docker|git|uv|pytest)"
++    r"\s+[^\n]+)",
++    re.IGNORECASE | re.MULTILINE,
++)
++PACKAGE_PATTERN = re.compile(r"^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$")
++PACKAGE_CONTEXT_PATTERN = re.compile(
++    r"\b(?:install|from|import)\s+([a-z][a-z0-9]*(?:[-_][a-z0-9]+)*)\b",
++    re.IGNORECASE,
++)
++TOKEN_PATTERN = re.compile(r"\b[A-Za-z][A-Za-z0-9_-]*\b")
++
++STOP_WORDS = {
++    "cannot",
++    "could",
++    "error",
++    "failed",
++    "from",
++    "have",
++    "please",
++    "that",
++    "the",
++    "this",
++    "with",
++    "would",
++    "after",
++    "before",
++    "into",
++    "module",
++    "named",
++}
++
++
++def _dedup(items: Iterable[str]) -> list[str]:
++    seen: set[str] = set()
++    out: list[str] = []
++    for item in items:
++        key = item.casefold()
++        if key in seen:
++            continue
++        seen.add(key)
++        out.append(item)
++    return out
++
++
++def extract_signature(text: str) -> ErrorSignature:
++    """Extract ordered, searchable terms from error or query text."""
++    exception_names = _dedup(EXCEPTION_PATTERN.findall(text))
++    quoted_terms = _dedup(QUOTED_PATTERN.findall(text))
++    commands = _dedup(match.group(1).strip() for match in COMMAND_PATTERN.finditer(text))
++
++    package_candidates = [
++        term.casefold()
++        for term in quoted_terms
++        if PACKAGE_PATTERN.fullmatch(term.casefold())
++    ]
++    package_candidates.extend(
++        match.group(1).casefold() for match in PACKAGE_CONTEXT_PATTERN.finditer(text)
++    )
++    package_names = _dedup(package_candidates)
++
++    represented_tokens: set[str] = set()
++    for item in [*exception_names, *quoted_terms, *package_names, *commands]:
++        represented_tokens.update(token.casefold() for token in TOKEN_PATTERN.findall(item))
+ 
++    keywords = _dedup(
++        token.casefold()
++        for token in TOKEN_PATTERN.findall(text)
++        if len(token) >= 4
++        and token.casefold() not in STOP_WORDS
++        and token.casefold() not in represented_tokens
++    )
++
++    return ErrorSignature(
++        raw_text=text,
++        exception_names=exception_names,
++        quoted_terms=quoted_terms,
++        package_names=package_names,
++        commands=commands,
++        keywords=keywords,
++    )
+diff --git a/tests/test_signature.py b/tests/test_signature.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..cce2a4e6f5adf2f66018e3abf6d07cb8b88771ea
+--- /dev/null
++++ b/tests/test_signature.py
+@@ -0,0 +1,38 @@
++from debug_memory.signature import extract_signature
++
++
++def test_extracts_python_missing_package_signature() -> None:
++    signature = extract_signature(
++        "ModuleNotFoundError: No module named 'dotenv'\n"
++        "pip install python-dotenv"
++    )
++
++    assert signature.exception_names == ["ModuleNotFoundError"]
++    assert signature.quoted_terms == ["dotenv"]
++    assert signature.package_names == ["dotenv", "python-dotenv"]
++    assert signature.commands == ["pip install python-dotenv"]
++
++
++def test_extracts_react_type_error_and_npm_command() -> None:
++    signature = extract_signature(
++        "TypeError: Cannot read properties of undefined in react\n"
++        "npm install foo"
++    )
++
++    assert signature.exception_names == ["TypeError"]
++    assert signature.package_names == ["foo"]
++    assert signature.commands == ["npm install foo"]
++    assert "properties" in signature.keywords
++
++
++def test_deduplicates_features_case_insensitively_preserving_first_form() -> None:
++    signature = extract_signature(
++        "TypeError TypeError typeerror\n"
++        "No module named 'dotenv'; No module named \"DOTENV\"\n"
++        "pip install python-dotenv\nPIP install PYTHON-DOTENV"
++    )
++
++    assert signature.exception_names == ["TypeError"]
++    assert signature.quoted_terms == ["dotenv"]
++    assert signature.package_names == ["dotenv", "python-dotenv"]
++    assert signature.commands == ["pip install python-dotenv"]
+
+ exited 1 in 235ms:
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-9.0.3, pluggy-1.6.0 -- /Users/uenoyuuta/Debug_Memory/.venv/bin/python3.13
+cachedir: .pytest_cache
+rootdir: /Users/uenoyuuta/Debug_Memory
+configfile: pyproject.toml
+collecting ... collected 3 items
+
+tests/test_signature.py::test_extracts_python_missing_package_signature PASSED [ 33%]
+tests/test_signature.py::test_extracts_react_type_error_and_npm_command PASSED [ 66%]
+tests/test_signature.py::test_deduplicates_features_case_insensitively_preserving_first_form PASSED [100%]
+
+============================== 3 passed in 0.01s ===============================
+zsh:1: read-only variable: status
+
+codex
+The tests themselves passed, but my shell wrapper used zsh’s reserved `status` variable and therefore returned a false failure after pytest completed. I’m rerunning with a neutral exit-code variable so the recorded verification exits cleanly.
+exec
+/bin/zsh -lc "git status --short -- debug_memory/signature.py tests/test_signature.py && sed -n '1,220p' tests/test_signature.py" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+ M debug_memory/signature.py
+?? tests/test_signature.py
+from debug_memory.signature import extract_signature
+
+
+def test_extracts_python_missing_package_signature() -> None:
+    signature = extract_signature(
+        "ModuleNotFoundError: No module named 'dotenv'\n"
+        "pip install python-dotenv"
+    )
+
+    assert signature.exception_names == ["ModuleNotFoundError"]
+    assert signature.quoted_terms == ["dotenv"]
+    assert signature.package_names == ["dotenv", "python-dotenv"]
+    assert signature.commands == ["pip install python-dotenv"]
+
+
+def test_extracts_react_type_error_and_npm_command() -> None:
+    signature = extract_signature(
+        "TypeError: Cannot read properties of undefined in react\n"
+        "npm install foo"
+    )
+
+    assert signature.exception_names == ["TypeError"]
+    assert signature.package_names == ["foo"]
+    assert signature.commands == ["npm install foo"]
+    assert "properties" in signature.keywords
+
+
+def test_deduplicates_features_case_insensitively_preserving_first_form() -> None:
+    signature = extract_signature(
+        "TypeError TypeError typeerror\n"
+        "No module named 'dotenv'; No module named \"DOTENV\"\n"
+        "pip install python-dotenv\nPIP install PYTHON-DOTENV"
+    )
+
+    assert signature.exception_names == ["TypeError"]
+    assert signature.quoted_terms == ["dotenv"]
+    assert signature.package_names == ["dotenv", "python-dotenv"]
+    assert signature.commands == ["pip install python-dotenv"]
+
+exec
+/bin/zsh -lc 'source .venv/bin/activate && codex-distill -p "Did tests/test_signature.py pass? Return PASS with the passed-test count, or FAIL with failing test names and exact assertion/error locations." -- pytest tests/test_signature.py -v; rc=$?; deactivate; exit $rc' in /Users/uenoyuuta/Debug_Memory
+diff --git a/debug_memory/signature.py b/debug_memory/signature.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..eb59e1f8e48216fb0a437aec6df4d86ee461dabf
+--- a/debug_memory/signature.py
++++ b/debug_memory/signature.py
+@@ -1 +1,93 @@
++from __future__ import annotations
++
++import re
++from collections.abc import Iterable
++
++from .models import ErrorSignature
++
++
++EXCEPTION_PATTERN = re.compile(
++    r"\b[A-Za-z_][A-Za-z0-9_]*(?:Error|Exception|Warning)\b"
++)
++QUOTED_PATTERN = re.compile(r"""['"]([^'"\n]+)['"]""")
++COMMAND_PATTERN = re.compile(
++    r"(?:^|\s)((?:npm|pnpm|yarn|pip|poetry|python|node|docker|git|uv|pytest)"
++    r"\s+[^\n]+)",
++    re.IGNORECASE | re.MULTILINE,
++)
++PACKAGE_PATTERN = re.compile(r"^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$")
++PACKAGE_CONTEXT_PATTERN = re.compile(
++    r"\b(?:install|from|import)\s+([a-z][a-z0-9]*(?:[-_][a-z0-9]+)*)\b",
++    re.IGNORECASE,
++)
++TOKEN_PATTERN = re.compile(r"\b[A-Za-z][A-Za-z0-9_-]*\b")
++
++STOP_WORDS = {
++    "cannot",
++    "could",
++    "error",
++    "failed",
++    "from",
++    "have",
++    "please",
++    "that",
++    "the",
++    "this",
++    "with",
++    "would",
++    "after",
++    "before",
++    "into",
++    "module",
++    "named",
++}
++
++
++def _dedup(items: Iterable[str]) -> list[str]:
++    seen: set[str] = set()
++    out: list[str] = []
++    for item in items:
++        key = item.casefold()
++        if key in seen:
++            continue
++        seen.add(key)
++        out.append(item)
++    return out
++
++
++def extract_signature(text: str) -> ErrorSignature:
++    """Extract ordered, searchable terms from error or query text."""
++    exception_names = _dedup(EXCEPTION_PATTERN.findall(text))
++    quoted_terms = _dedup(QUOTED_PATTERN.findall(text))
++    commands = _dedup(match.group(1).strip() for match in COMMAND_PATTERN.finditer(text))
++
++    package_candidates = [
++        term.casefold()
++        for term in quoted_terms
++        if PACKAGE_PATTERN.fullmatch(term.casefold())
++    ]
++    package_candidates.extend(
++        match.group(1).casefold() for match in PACKAGE_CONTEXT_PATTERN.finditer(text)
++    )
++    package_names = _dedup(package_candidates)
++
++    represented_tokens: set[str] = set()
++    for item in [*exception_names, *quoted_terms, *package_names, *commands]:
++        represented_tokens.update(token.casefold() for token in TOKEN_PATTERN.findall(item))
+ 
++    keywords = _dedup(
++        token.casefold()
++        for token in TOKEN_PATTERN.findall(text)
++        if len(token) >= 4
++        and token.casefold() not in STOP_WORDS
++        and token.casefold() not in represented_tokens
++    )
++
++    return ErrorSignature(
++        raw_text=text,
++        exception_names=exception_names,
++        quoted_terms=quoted_terms,
++        package_names=package_names,
++        commands=commands,
++        keywords=keywords,
++    )
+diff --git a/tests/test_signature.py b/tests/test_signature.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..cce2a4e6f5adf2f66018e3abf6d07cb8b88771ea
+--- /dev/null
++++ b/tests/test_signature.py
+@@ -0,0 +1,38 @@
++from debug_memory.signature import extract_signature
++
++
++def test_extracts_python_missing_package_signature() -> None:
++    signature = extract_signature(
++        "ModuleNotFoundError: No module named 'dotenv'\n"
++        "pip install python-dotenv"
++    )
++
++    assert signature.exception_names == ["ModuleNotFoundError"]
++    assert signature.quoted_terms == ["dotenv"]
++    assert signature.package_names == ["dotenv", "python-dotenv"]
++    assert signature.commands == ["pip install python-dotenv"]
++
++
++def test_extracts_react_type_error_and_npm_command() -> None:
++    signature = extract_signature(
++        "TypeError: Cannot read properties of undefined in react\n"
++        "npm install foo"
++    )
++
++    assert signature.exception_names == ["TypeError"]
++    assert signature.package_names == ["foo"]
++    assert signature.commands == ["npm install foo"]
++    assert "properties" in signature.keywords
++
++
++def test_deduplicates_features_case_insensitively_preserving_first_form() -> None:
++    signature = extract_signature(
++        "TypeError TypeError typeerror\n"
++        "No module named 'dotenv'; No module named \"DOTENV\"\n"
++        "pip install python-dotenv\nPIP install PYTHON-DOTENV"
++    )
++
++    assert signature.exception_names == ["TypeError"]
++    assert signature.quoted_terms == ["dotenv"]
++    assert signature.package_names == ["dotenv", "python-dotenv"]
++    assert signature.commands == ["pip install python-dotenv"]
+
+ succeeded in 127ms:
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-9.0.3, pluggy-1.6.0 -- /Users/uenoyuuta/Debug_Memory/.venv/bin/python3.13
+cachedir: .pytest_cache
+rootdir: /Users/uenoyuuta/Debug_Memory
+configfile: pyproject.toml
+collecting ... collected 3 items
+
+tests/test_signature.py::test_extracts_python_missing_package_signature PASSED [ 33%]
+tests/test_signature.py::test_extracts_react_type_error_and_npm_command PASSED [ 66%]
+tests/test_signature.py::test_deduplicates_features_case_insensitively_preserving_first_form PASSED [100%]
+
+============================== 3 passed in 0.01s ===============================
+
+codex
+The rerun exits successfully with three passing tests. I noticed the explicit stop-word set should contain `and` even though the minimum keyword length already prevents it from surfacing, so I’m making that intent explicit in the constant before closing out.
+apply patch
+patch: completed
+/Users/uenoyuuta/Debug_Memory/debug_memory/signature.py
+diff --git a/debug_memory/signature.py b/debug_memory/signature.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..1d528a0406618aa77cdf15fd46ca5e8e1f102a1a
+--- a/debug_memory/signature.py
++++ b/debug_memory/signature.py
+@@ -1 +1,94 @@
++from __future__ import annotations
++
++import re
++from collections.abc import Iterable
++
++from .models import ErrorSignature
++
++
++EXCEPTION_PATTERN = re.compile(
++    r"\b[A-Za-z_][A-Za-z0-9_]*(?:Error|Exception|Warning)\b"
++)
++QUOTED_PATTERN = re.compile(r"""['"]([^'"\n]+)['"]""")
++COMMAND_PATTERN = re.compile(
++    r"(?:^|\s)((?:npm|pnpm|yarn|pip|poetry|python|node|docker|git|uv|pytest)"
++    r"\s+[^\n]+)",
++    re.IGNORECASE | re.MULTILINE,
++)
++PACKAGE_PATTERN = re.compile(r"^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$")
++PACKAGE_CONTEXT_PATTERN = re.compile(
++    r"\b(?:install|from|import)\s+([a-z][a-z0-9]*(?:[-_][a-z0-9]+)*)\b",
++    re.IGNORECASE,
++)
++TOKEN_PATTERN = re.compile(r"\b[A-Za-z][A-Za-z0-9_-]*\b")
+ 
++STOP_WORDS = {
++    "and",
++    "cannot",
++    "could",
++    "error",
++    "failed",
++    "from",
++    "have",
++    "please",
++    "that",
++    "the",
++    "this",
++    "with",
++    "would",
++    "after",
++    "before",
++    "into",
++    "module",
++    "named",
++}
++
++
++def _dedup(items: Iterable[str]) -> list[str]:
++    seen: set[str] = set()
++    out: list[str] = []
++    for item in items:
++        key = item.casefold()
++        if key in seen:
++            continue
++        seen.add(key)
++        out.append(item)
++    return out
++
++
++def extract_signature(text: str) -> ErrorSignature:
++    """Extract ordered, searchable terms from error or query text."""
++    exception_names = _dedup(EXCEPTION_PATTERN.findall(text))
++    quoted_terms = _dedup(QUOTED_PATTERN.findall(text))
++    commands = _dedup(match.group(1).strip() for match in COMMAND_PATTERN.finditer(text))
++
++    package_candidates = [
++        term.casefold()
++        for term in quoted_terms
++        if PACKAGE_PATTERN.fullmatch(term.casefold())
++    ]
++    package_candidates.extend(
++        match.group(1).casefold() for match in PACKAGE_CONTEXT_PATTERN.finditer(text)
++    )
++    package_names = _dedup(package_candidates)
++
++    represented_tokens: set[str] = set()
++    for item in [*exception_names, *quoted_terms, *package_names, *commands]:
++        represented_tokens.update(token.casefold() for token in TOKEN_PATTERN.findall(item))
++
++    keywords = _dedup(
++        token.casefold()
++        for token in TOKEN_PATTERN.findall(text)
++        if len(token) >= 4
++        and token.casefold() not in STOP_WORDS
++        and token.casefold() not in represented_tokens
++    )
++
++    return ErrorSignature(
++        raw_text=text,
++        exception_names=exception_names,
++        quoted_terms=quoted_terms,
++        package_names=package_names,
++        commands=commands,
++        keywords=keywords,
++    )
+diff --git a/tests/test_signature.py b/tests/test_signature.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..cce2a4e6f5adf2f66018e3abf6d07cb8b88771ea
+--- /dev/null
++++ b/tests/test_signature.py
+@@ -0,0 +1,38 @@
++from debug_memory.signature import extract_signature
++
++
++def test_extracts_python_missing_package_signature() -> None:
++    signature = extract_signature(
++        "ModuleNotFoundError: No module named 'dotenv'\n"
++        "pip install python-dotenv"
++    )
++
++    assert signature.exception_names == ["ModuleNotFoundError"]
++    assert signature.quoted_terms == ["dotenv"]
++    assert signature.package_names == ["dotenv", "python-dotenv"]
++    assert signature.commands == ["pip install python-dotenv"]
++
++
++def test_extracts_react_type_error_and_npm_command() -> None:
++    signature = extract_signature(
++        "TypeError: Cannot read properties of undefined in react\n"
++        "npm install foo"
++    )
++
++    assert signature.exception_names == ["TypeError"]
++    assert signature.package_names == ["foo"]
++    assert signature.commands == ["npm install foo"]
++    assert "properties" in signature.keywords
++
++
++def test_deduplicates_features_case_insensitively_preserving_first_form() -> None:
++    signature = extract_signature(
++        "TypeError TypeError typeerror\n"
++        "No module named 'dotenv'; No module named \"DOTENV\"\n"
++        "pip install python-dotenv\nPIP install PYTHON-DOTENV"
++    )
++
++    assert signature.exception_names == ["TypeError"]
++    assert signature.quoted_terms == ["dotenv"]
++    assert signature.package_names == ["dotenv", "python-dotenv"]
++    assert signature.commands == ["pip install python-dotenv"]
+
+diff --git a/debug_memory/signature.py b/debug_memory/signature.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..1d528a0406618aa77cdf15fd46ca5e8e1f102a1a
+--- a/debug_memory/signature.py
++++ b/debug_memory/signature.py
+@@ -1 +1,94 @@
++from __future__ import annotations
++
++import re
++from collections.abc import Iterable
++
++from .models import ErrorSignature
++
++
++EXCEPTION_PATTERN = re.compile(
++    r"\b[A-Za-z_][A-Za-z0-9_]*(?:Error|Exception|Warning)\b"
++)
++QUOTED_PATTERN = re.compile(r"""['"]([^'"\n]+)['"]""")
++COMMAND_PATTERN = re.compile(
++    r"(?:^|\s)((?:npm|pnpm|yarn|pip|poetry|python|node|docker|git|uv|pytest)"
++    r"\s+[^\n]+)",
++    re.IGNORECASE | re.MULTILINE,
++)
++PACKAGE_PATTERN = re.compile(r"^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$")
++PACKAGE_CONTEXT_PATTERN = re.compile(
++    r"\b(?:install|from|import)\s+([a-z][a-z0-9]*(?:[-_][a-z0-9]+)*)\b",
++    re.IGNORECASE,
++)
++TOKEN_PATTERN = re.compile(r"\b[A-Za-z][A-Za-z0-9_-]*\b")
+ 
++STOP_WORDS = {
++    "and",
++    "cannot",
++    "could",
++    "error",
++    "failed",
++    "from",
++    "have",
++    "please",
++    "that",
++    "the",
++    "this",
++    "with",
++    "would",
++    "after",
++    "before",
++    "into",
++    "module",
++    "named",
++}
++
++
++def _dedup(items: Iterable[str]) -> list[str]:
++    seen: set[str] = set()
++    out: list[str] = []
++    for item in items:
++        key = item.casefold()
++        if key in seen:
++            continue
++        seen.add(key)
++        out.append(item)
++    return out
++
++
++def extract_signature(text: str) -> ErrorSignature:
++    """Extract ordered, searchable terms from error or query text."""
++    exception_names = _dedup(EXCEPTION_PATTERN.findall(text))
++    quoted_terms = _dedup(QUOTED_PATTERN.findall(text))
++    commands = _dedup(match.group(1).strip() for match in COMMAND_PATTERN.finditer(text))
++
++    package_candidates = [
++        term.casefold()
++        for term in quoted_terms
++        if PACKAGE_PATTERN.fullmatch(term.casefold())
++    ]
++    package_candidates.extend(
++        match.group(1).casefold() for match in PACKAGE_CONTEXT_PATTERN.finditer(text)
++    )
++    package_names = _dedup(package_candidates)
++
++    represented_tokens: set[str] = set()
++    for item in [*exception_names, *quoted_terms, *package_names, *commands]:
++        represented_tokens.update(token.casefold() for token in TOKEN_PATTERN.findall(item))
++
++    keywords = _dedup(
++        token.casefold()
++        for token in TOKEN_PATTERN.findall(text)
++        if len(token) >= 4
++        and token.casefold() not in STOP_WORDS
++        and token.casefold() not in represented_tokens
++    )
++
++    return ErrorSignature(
++        raw_text=text,
++        exception_names=exception_names,
++        quoted_terms=quoted_terms,
++        package_names=package_names,
++        commands=commands,
++        keywords=keywords,
++    )
+diff --git a/tests/test_signature.py b/tests/test_signature.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..cce2a4e6f5adf2f66018e3abf6d07cb8b88771ea
+--- /dev/null
++++ b/tests/test_signature.py
+@@ -0,0 +1,38 @@
++from debug_memory.signature import extract_signature
++
++
++def test_extracts_python_missing_package_signature() -> None:
++    signature = extract_signature(
++        "ModuleNotFoundError: No module named 'dotenv'\n"
++        "pip install python-dotenv"
++    )
++
++    assert signature.exception_names == ["ModuleNotFoundError"]
++    assert signature.quoted_terms == ["dotenv"]
++    assert signature.package_names == ["dotenv", "python-dotenv"]
++    assert signature.commands == ["pip install python-dotenv"]
++
++
++def test_extracts_react_type_error_and_npm_command() -> None:
++    signature = extract_signature(
++        "TypeError: Cannot read properties of undefined in react\n"
++        "npm install foo"
++    )
++
++    assert signature.exception_names == ["TypeError"]
++    assert signature.package_names == ["foo"]
++    assert signature.commands == ["npm install foo"]
++    assert "properties" in signature.keywords
++
++
++def test_deduplicates_features_case_insensitively_preserving_first_form() -> None:
++    signature = extract_signature(
++        "TypeError TypeError typeerror\n"
++        "No module named 'dotenv'; No module named \"DOTENV\"\n"
++        "pip install python-dotenv\nPIP install PYTHON-DOTENV"
++    )
++
++    assert signature.exception_names == ["TypeError"]
++    assert signature.quoted_terms == ["dotenv"]
++    assert signature.package_names == ["dotenv", "python-dotenv"]
++    assert signature.commands == ["pip install python-dotenv"]
+
+codex
+The only follow-up edit makes the mandated stop-word treatment explicit; runtime behavior for three-letter tokens was already filtered. I’m rerunning the focused suite after that final change.
+exec
+/bin/zsh -lc 'git diff --check -- debug_memory/signature.py && git status --short -- debug_memory/signature.py tests/test_signature.py' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+ M debug_memory/signature.py
+?? tests/test_signature.py
+
+exec
+/bin/zsh -lc 'source .venv/bin/activate && codex-distill -p "Did tests/test_signature.py pass? Return PASS with the passed-test count, or FAIL with failing test names and exact assertion/error locations." -- pytest tests/test_signature.py -v; rc=$?; deactivate; exit $rc' in /Users/uenoyuuta/Debug_Memory
+diff --git a/debug_memory/signature.py b/debug_memory/signature.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..1d528a0406618aa77cdf15fd46ca5e8e1f102a1a
+--- a/debug_memory/signature.py
++++ b/debug_memory/signature.py
+@@ -1 +1,94 @@
++from __future__ import annotations
++
++import re
++from collections.abc import Iterable
++
++from .models import ErrorSignature
++
++
++EXCEPTION_PATTERN = re.compile(
++    r"\b[A-Za-z_][A-Za-z0-9_]*(?:Error|Exception|Warning)\b"
++)
++QUOTED_PATTERN = re.compile(r"""['"]([^'"\n]+)['"]""")
++COMMAND_PATTERN = re.compile(
++    r"(?:^|\s)((?:npm|pnpm|yarn|pip|poetry|python|node|docker|git|uv|pytest)"
++    r"\s+[^\n]+)",
++    re.IGNORECASE | re.MULTILINE,
++)
++PACKAGE_PATTERN = re.compile(r"^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$")
++PACKAGE_CONTEXT_PATTERN = re.compile(
++    r"\b(?:install|from|import)\s+([a-z][a-z0-9]*(?:[-_][a-z0-9]+)*)\b",
++    re.IGNORECASE,
++)
++TOKEN_PATTERN = re.compile(r"\b[A-Za-z][A-Za-z0-9_-]*\b")
+ 
++STOP_WORDS = {
++    "and",
++    "cannot",
++    "could",
++    "error",
++    "failed",
++    "from",
++    "have",
++    "please",
++    "that",
++    "the",
++    "this",
++    "with",
++    "would",
++    "after",
++    "before",
++    "into",
++    "module",
++    "named",
++}
++
++
++def _dedup(items: Iterable[str]) -> list[str]:
++    seen: set[str] = set()
++    out: list[str] = []
++    for item in items:
++        key = item.casefold()
++        if key in seen:
++            continue
++        seen.add(key)
++        out.append(item)
++    return out
++
++
++def extract_signature(text: str) -> ErrorSignature:
++    """Extract ordered, searchable terms from error or query text."""
++    exception_names = _dedup(EXCEPTION_PATTERN.findall(text))
++    quoted_terms = _dedup(QUOTED_PATTERN.findall(text))
++    commands = _dedup(match.group(1).strip() for match in COMMAND_PATTERN.finditer(text))
++
++    package_candidates = [
++        term.casefold()
++        for term in quoted_terms
++        if PACKAGE_PATTERN.fullmatch(term.casefold())
++    ]
++    package_candidates.extend(
++        match.group(1).casefold() for match in PACKAGE_CONTEXT_PATTERN.finditer(text)
++    )
++    package_names = _dedup(package_candidates)
++
++    represented_tokens: set[str] = set()
++    for item in [*exception_names, *quoted_terms, *package_names, *commands]:
++        represented_tokens.update(token.casefold() for token in TOKEN_PATTERN.findall(item))
++
++    keywords = _dedup(
++        token.casefold()
++        for token in TOKEN_PATTERN.findall(text)
++        if len(token) >= 4
++        and token.casefold() not in STOP_WORDS
++        and token.casefold() not in represented_tokens
++    )
++
++    return ErrorSignature(
++        raw_text=text,
++        exception_names=exception_names,
++        quoted_terms=quoted_terms,
++        package_names=package_names,
++        commands=commands,
++        keywords=keywords,
++    )
+diff --git a/tests/test_signature.py b/tests/test_signature.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..cce2a4e6f5adf2f66018e3abf6d07cb8b88771ea
+--- /dev/null
++++ b/tests/test_signature.py
+@@ -0,0 +1,38 @@
++from debug_memory.signature import extract_signature
++
++
++def test_extracts_python_missing_package_signature() -> None:
++    signature = extract_signature(
++        "ModuleNotFoundError: No module named 'dotenv'\n"
++        "pip install python-dotenv"
++    )
++
++    assert signature.exception_names == ["ModuleNotFoundError"]
++    assert signature.quoted_terms == ["dotenv"]
++    assert signature.package_names == ["dotenv", "python-dotenv"]
++    assert signature.commands == ["pip install python-dotenv"]
++
++
++def test_extracts_react_type_error_and_npm_command() -> None:
++    signature = extract_signature(
++        "TypeError: Cannot read properties of undefined in react\n"
++        "npm install foo"
++    )
++
++    assert signature.exception_names == ["TypeError"]
++    assert signature.package_names == ["foo"]
++    assert signature.commands == ["npm install foo"]
++    assert "properties" in signature.keywords
++
++
++def test_deduplicates_features_case_insensitively_preserving_first_form() -> None:
++    signature = extract_signature(
++        "TypeError TypeError typeerror\n"
++        "No module named 'dotenv'; No module named \"DOTENV\"\n"
++        "pip install python-dotenv\nPIP install PYTHON-DOTENV"
++    )
++
++    assert signature.exception_names == ["TypeError"]
++    assert signature.quoted_terms == ["dotenv"]
++    assert signature.package_names == ["dotenv", "python-dotenv"]
++    assert signature.commands == ["pip install python-dotenv"]
+
+ succeeded in 669ms:
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-9.0.3, pluggy-1.6.0 -- /Users/uenoyuuta/Debug_Memory/.venv/bin/python3.13
+cachedir: .pytest_cache
+rootdir: /Users/uenoyuuta/Debug_Memory
+configfile: pyproject.toml
+collecting ... collected 3 items
+
+tests/test_signature.py::test_extracts_python_missing_package_signature PASSED [ 33%]
+tests/test_signature.py::test_extracts_react_type_error_and_npm_command PASSED [ 66%]
+tests/test_signature.py::test_deduplicates_features_case_insensitively_preserving_first_form PASSED [100%]
+
+============================== 3 passed in 0.03s ===============================
+
+codex
+{"status":"completed","changed_files":["debug_memory/signature.py","tests/test_signature.py"],"summary":"Implemented ordered, case-aware error signature extraction for exceptions, quoted terms, package names, commands, and filtered keywords; added focused tests for Python and React errors, command extraction, and deduplication.","tests_run":["pytest tests/test_signature.py -v: 3 passed"]}
+diff --git a/debug_memory/signature.py b/debug_memory/signature.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..1d528a0406618aa77cdf15fd46ca5e8e1f102a1a
+--- a/debug_memory/signature.py
++++ b/debug_memory/signature.py
+@@ -1 +1,94 @@
++from __future__ import annotations
++
++import re
++from collections.abc import Iterable
++
++from .models import ErrorSignature
++
++
++EXCEPTION_PATTERN = re.compile(
++    r"\b[A-Za-z_][A-Za-z0-9_]*(?:Error|Exception|Warning)\b"
++)
++QUOTED_PATTERN = re.compile(r"""['"]([^'"\n]+)['"]""")
++COMMAND_PATTERN = re.compile(
++    r"(?:^|\s)((?:npm|pnpm|yarn|pip|poetry|python|node|docker|git|uv|pytest)"
++    r"\s+[^\n]+)",
++    re.IGNORECASE | re.MULTILINE,
++)
++PACKAGE_PATTERN = re.compile(r"^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$")
++PACKAGE_CONTEXT_PATTERN = re.compile(
++    r"\b(?:install|from|import)\s+([a-z][a-z0-9]*(?:[-_][a-z0-9]+)*)\b",
++    re.IGNORECASE,
++)
++TOKEN_PATTERN = re.compile(r"\b[A-Za-z][A-Za-z0-9_-]*\b")
+ 
++STOP_WORDS = {
++    "and",
++    "cannot",
++    "could",
++    "error",
++    "failed",
++    "from",
++    "have",
++    "please",
++    "that",
++    "the",
++    "this",
++    "with",
++    "would",
++    "after",
++    "before",
++    "into",
++    "module",
++    "named",
++}
++
++
++def _dedup(items: Iterable[str]) -> list[str]:
++    seen: set[str] = set()
++    out: list[str] = []
++    for item in items:
++        key = item.casefold()
++        if key in seen:
++            continue
++        seen.add(key)
++        out.append(item)
++    return out
++
++
++def extract_signature(text: str) -> ErrorSignature:
++    """Extract ordered, searchable terms from error or query text."""
++    exception_names = _dedup(EXCEPTION_PATTERN.findall(text))
++    quoted_terms = _dedup(QUOTED_PATTERN.findall(text))
++    commands = _dedup(match.group(1).strip() for match in COMMAND_PATTERN.finditer(text))
++
++    package_candidates = [
++        term.casefold()
++        for term in quoted_terms
++        if PACKAGE_PATTERN.fullmatch(term.casefold())
++    ]
++    package_candidates.extend(
++        match.group(1).casefold() for match in PACKAGE_CONTEXT_PATTERN.finditer(text)
++    )
++    package_names = _dedup(package_candidates)
++
++    represented_tokens: set[str] = set()
++    for item in [*exception_names, *quoted_terms, *package_names, *commands]:
++        represented_tokens.update(token.casefold() for token in TOKEN_PATTERN.findall(item))
++
++    keywords = _dedup(
++        token.casefold()
++        for token in TOKEN_PATTERN.findall(text)
++        if len(token) >= 4
++        and token.casefold() not in STOP_WORDS
++        and token.casefold() not in represented_tokens
++    )
++
++    return ErrorSignature(
++        raw_text=text,
++        exception_names=exception_names,
++        quoted_terms=quoted_terms,
++        package_names=package_names,
++        commands=commands,
++        keywords=keywords,
++    )
+diff --git a/tests/test_signature.py b/tests/test_signature.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..cce2a4e6f5adf2f66018e3abf6d07cb8b88771ea
+--- /dev/null
++++ b/tests/test_signature.py
+@@ -0,0 +1,38 @@
++from debug_memory.signature import extract_signature
++
++
++def test_extracts_python_missing_package_signature() -> None:
++    signature = extract_signature(
++        "ModuleNotFoundError: No module named 'dotenv'\n"
++        "pip install python-dotenv"
++    )
++
++    assert signature.exception_names == ["ModuleNotFoundError"]
++    assert signature.quoted_terms == ["dotenv"]
++    assert signature.package_names == ["dotenv", "python-dotenv"]
++    assert signature.commands == ["pip install python-dotenv"]
++
++
++def test_extracts_react_type_error_and_npm_command() -> None:
++    signature = extract_signature(
++        "TypeError: Cannot read properties of undefined in react\n"
++        "npm install foo"
++    )
++
++    assert signature.exception_names == ["TypeError"]
++    assert signature.package_names == ["foo"]
++    assert signature.commands == ["npm install foo"]
++    assert "properties" in signature.keywords
++
++
++def test_deduplicates_features_case_insensitively_preserving_first_form() -> None:
++    signature = extract_signature(
++        "TypeError TypeError typeerror\n"
++        "No module named 'dotenv'; No module named \"DOTENV\"\n"
++        "pip install python-dotenv\nPIP install PYTHON-DOTENV"
++    )
++
++    assert signature.exception_names == ["TypeError"]
++    assert signature.quoted_terms == ["dotenv"]
++    assert signature.package_names == ["dotenv", "python-dotenv"]
++    assert signature.commands == ["pip install python-dotenv"]
+
+tokens used
+13,807

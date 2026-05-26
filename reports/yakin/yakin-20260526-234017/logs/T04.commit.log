@@ -1,0 +1,11 @@
+[ai/yakin-20260526-234017 3dbbbf5] feat(T04): implement parser.py with frontmatter+section extraction and tests
+ 10 files changed, 2481 insertions(+)
+ create mode 100644 reports/yakin/yakin-20260526-234017/codex-reports/T04-report.md
+ create mode 100644 reports/yakin/yakin-20260526-234017/diffs/T04.changed-files
+ create mode 100644 reports/yakin/yakin-20260526-234017/diffs/T04.diffstat
+ create mode 100644 reports/yakin/yakin-20260526-234017/handoffs/T04-to-codex.md
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T04.stderr.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T04.stdout.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T04.verify.log
+ create mode 100755 reports/yakin/yakin-20260526-234017/run-task.sh
+ create mode 100644 tests/test_parser.py

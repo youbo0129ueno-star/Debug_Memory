@@ -1,0 +1,12 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-9.0.3, pluggy-1.6.0 -- /Users/uenoyuuta/Debug_Memory/.venv/bin/python3.13
+cachedir: .pytest_cache
+rootdir: /Users/uenoyuuta/Debug_Memory
+configfile: pyproject.toml
+collecting ... collected 3 items
+
+tests/test_signature.py::test_extracts_python_missing_package_signature PASSED [ 33%]
+tests/test_signature.py::test_extracts_react_type_error_and_npm_command PASSED [ 66%]
+tests/test_signature.py::test_deduplicates_features_case_insensitively_preserving_first_form PASSED [100%]
+
+============================== 3 passed in 0.01s ===============================
