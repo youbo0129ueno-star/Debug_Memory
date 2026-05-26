@@ -1,0 +1,11 @@
+[ai/yakin-20260526-234017 48f22c5] feat(T06): rule-based search with reasons + tests
+ 10 files changed, 2290 insertions(+)
+ create mode 100644 reports/yakin/yakin-20260526-234017/codex-reports/T06-report.md
+ create mode 100644 reports/yakin/yakin-20260526-234017/diffs/T06.changed-files
+ create mode 100644 reports/yakin/yakin-20260526-234017/diffs/T06.diffstat
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T05.commit.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T05.push.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T06.stderr.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T06.stdout.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T06.verify.log
+ create mode 100644 tests/test_search.py
