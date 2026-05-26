@@ -1,0 +1,6 @@
+{
+  "status": "completed",
+  "changed_files": ["debug_memory/models.py"],
+  "summary": "Implemented the Debug Memory Vol.1 internal data model with `ErrorCase`, `ErrorSignature`, and `SearchResult` dataclasses using modern Python type annotations and `Path` for case source paths.",
+  "tests_run": ["`python -c \"from debug_memory.models import ErrorCase, ErrorSignature, SearchResult; print('ok')\"`: passed (`ok`)"]
+}

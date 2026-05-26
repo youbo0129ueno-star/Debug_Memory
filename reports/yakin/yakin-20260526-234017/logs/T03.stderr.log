@@ -1,0 +1,360 @@
+Reading prompt from stdin...
+OpenAI Codex v0.133.0
+--------
+workdir: /Users/uenoyuuta/Debug_Memory
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: medium
+reasoning summaries: none
+session id: 019e64c7-4457-7f53-b5f5-5674d413f292
+--------
+user
+# Role
+
+Fresh Codex implementation worker under Claude Yakin Agent.
+
+# Task
+
+Implement `debug_memory/models.py` with dataclass definitions for the entire Debug Memory Vol.1 internal data model.
+
+# Acceptance Criteria
+
+- [ ] `debug_memory/models.py` contains the following dataclasses:
+  - `ErrorCase` (id, title, status, tags, language, frameworks, error, context, solution, notes, path)
+  - `ErrorSignature` (raw_text, exception_names, quoted_terms, package_names, commands, keywords)
+  - `SearchResult` (case, score, reasons)
+- [ ] All dataclasses are decorated with `@dataclass`
+- [ ] Use `from __future__ import annotations` at the top
+- [ ] Use modern Python 3.10+ syntax: `list[str]`, `str | None`, etc.
+- [ ] `language` field of `ErrorCase` is `str | None` (optional)
+- [ ] `path` field of `ErrorCase` is `pathlib.Path`
+- [ ] `from dataclasses import dataclass` and `from pathlib import Path` imports present
+- [ ] No business logic in this file — only dataclass definitions
+- [ ] `python -c "from debug_memory.models import ErrorCase, ErrorSignature, SearchResult; print('ok')"` prints `ok`
+
+# Exact dataclass shape
+
+```python
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from pathlib import Path
+
+
+@dataclass
+class ErrorCase:
+    id: str
+    title: str
+    status: str
+    tags: list[str]
+    language: str | None
+    frameworks: list[str]
+    error: str
+    context: str
+    solution: str
+    notes: str
+    path: Path
+
+
+@dataclass
+class ErrorSignature:
+    raw_text: str
+    exception_names: list[str]
+    quoted_terms: list[str]
+    package_names: list[str]
+    commands: list[str]
+    keywords: list[str]
+
+
+@dataclass
+class SearchResult:
+    case: ErrorCase
+    score: float
+    reasons: list[str]
+```
+
+You may optionally add a `RagAnswer` dataclass if it would help T07 (`rag.py`), but it is not required for this task.
+
+# Allowed Edit Scope
+
+- /Users/uenoyuuta/Debug_Memory/debug_memory/models.py
+
+# Forbidden Edit Scope
+
+- Everything else.
+
+# Verification
+
+```
+cd /Users/uenoyuuta/Debug_Memory
+source .venv/bin/activate
+python -c "from debug_memory.models import ErrorCase, ErrorSignature, SearchResult; print('ok')"
+deactivate
+```
+
+Expected: prints `ok`.
+
+# Final Report Format
+
+```json
+{
+  "status": "completed | partial | failed",
+  "changed_files": ["debug_memory/models.py"],
+  "summary": "...",
+  "tests_run": ["...: result"]
+}
+```
+
+codex
+I’ll implement the requested data-only model module within the permitted file, first checking its current contents and package layout so the edit preserves any relevant existing state.
+exec
+/bin/zsh -lc 'git status --short -- debug_memory/models.py 2>/dev/null || true' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+exec
+/bin/zsh -lc "pwd && rg --files -g 'models.py' -g '__init__.py' debug_memory 2>/dev/null" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+/Users/uenoyuuta/Debug_Memory
+debug_memory/__init__.py
+debug_memory/models.py
+
+codex
+The module exists and is not currently reported as modified. I’m reading only that file, then will replace or adjust it to the exact three dataclasses requested.
+exec
+/bin/zsh -lc "sed -n '1,200p' debug_memory/models.py" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+codex
+`debug_memory/models.py` is empty, so the edit is confined to adding the specified imports and three dataclass definitions, with no extra model or logic.
+apply patch
+patch: completed
+/Users/uenoyuuta/Debug_Memory/debug_memory/models.py
+diff --git a/debug_memory/models.py b/debug_memory/models.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..f31e6c869c0e35ec6a0f21fd3d92b90c5b2c411b
+--- a/debug_memory/models.py
++++ b/debug_memory/models.py
+@@ -1 +1,36 @@
++from __future__ import annotations
++
++from dataclasses import dataclass
++from pathlib import Path
++
+ 
++@dataclass
++class ErrorCase:
++    id: str
++    title: str
++    status: str
++    tags: list[str]
++    language: str | None
++    frameworks: list[str]
++    error: str
++    context: str
++    solution: str
++    notes: str
++    path: Path
++
++
++@dataclass
++class ErrorSignature:
++    raw_text: str
++    exception_names: list[str]
++    quoted_terms: list[str]
++    package_names: list[str]
++    commands: list[str]
++    keywords: list[str]
++
++
++@dataclass
++class SearchResult:
++    case: ErrorCase
++    score: float
++    reasons: list[str]
+
+diff --git a/debug_memory/models.py b/debug_memory/models.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..f31e6c869c0e35ec6a0f21fd3d92b90c5b2c411b
+--- a/debug_memory/models.py
++++ b/debug_memory/models.py
+@@ -1 +1,36 @@
++from __future__ import annotations
++
++from dataclasses import dataclass
++from pathlib import Path
++
+ 
++@dataclass
++class ErrorCase:
++    id: str
++    title: str
++    status: str
++    tags: list[str]
++    language: str | None
++    frameworks: list[str]
++    error: str
++    context: str
++    solution: str
++    notes: str
++    path: Path
++
++
++@dataclass
++class ErrorSignature:
++    raw_text: str
++    exception_names: list[str]
++    quoted_terms: list[str]
++    package_names: list[str]
++    commands: list[str]
++    keywords: list[str]
++
++
++@dataclass
++class SearchResult:
++    case: ErrorCase
++    score: float
++    reasons: list[str]
+
+codex
+The definitions are in place. I’m now running the requested import verification in the project virtual environment and checking the scoped diff for accidental additions.
+exec
+/bin/zsh -lc 'git diff -- debug_memory/models.py' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+diff --git a/debug_memory/models.py b/debug_memory/models.py
+index 8b13789..f31e6c8 100644
+--- a/debug_memory/models.py
++++ b/debug_memory/models.py
+@@ -1 +1,36 @@
++from __future__ import annotations
+ 
++from dataclasses import dataclass
++from pathlib import Path
++
++
++@dataclass
++class ErrorCase:
++    id: str
++    title: str
++    status: str
++    tags: list[str]
++    language: str | None
++    frameworks: list[str]
++    error: str
++    context: str
++    solution: str
++    notes: str
++    path: Path
++
++
++@dataclass
++class ErrorSignature:
++    raw_text: str
++    exception_names: list[str]
++    quoted_terms: list[str]
++    package_names: list[str]
++    commands: list[str]
++    keywords: list[str]
++
++
++@dataclass
++class SearchResult:
++    case: ErrorCase
++    score: float
++    reasons: list[str]
+
+exec
+/bin/zsh -lc "source .venv/bin/activate && python -c \"from debug_memory.models import ErrorCase, ErrorSignature, SearchResult; print('ok')\" && deactivate" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+ok
+
+diff --git a/debug_memory/models.py b/debug_memory/models.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..f31e6c869c0e35ec6a0f21fd3d92b90c5b2c411b
+--- a/debug_memory/models.py
++++ b/debug_memory/models.py
+@@ -1 +1,36 @@
++from __future__ import annotations
++
++from dataclasses import dataclass
++from pathlib import Path
++
+ 
++@dataclass
++class ErrorCase:
++    id: str
++    title: str
++    status: str
++    tags: list[str]
++    language: str | None
++    frameworks: list[str]
++    error: str
++    context: str
++    solution: str
++    notes: str
++    path: Path
++
++
++@dataclass
++class ErrorSignature:
++    raw_text: str
++    exception_names: list[str]
++    quoted_terms: list[str]
++    package_names: list[str]
++    commands: list[str]
++    keywords: list[str]
++
++
++@dataclass
++class SearchResult:
++    case: ErrorCase
++    score: float
++    reasons: list[str]
+
+codex
+{
+  "status": "completed",
+  "changed_files": ["debug_memory/models.py"],
+  "summary": "Implemented the Debug Memory Vol.1 internal data model with `ErrorCase`, `ErrorSignature`, and `SearchResult` dataclasses using modern Python type annotations and `Path` for case source paths.",
+  "tests_run": ["`python -c \"from debug_memory.models import ErrorCase, ErrorSignature, SearchResult; print('ok')\"`: passed (`ok`)"]
+}
+diff --git a/debug_memory/models.py b/debug_memory/models.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..f31e6c869c0e35ec6a0f21fd3d92b90c5b2c411b
+--- a/debug_memory/models.py
++++ b/debug_memory/models.py
+@@ -1 +1,36 @@
++from __future__ import annotations
++
++from dataclasses import dataclass
++from pathlib import Path
++
+ 
++@dataclass
++class ErrorCase:
++    id: str
++    title: str
++    status: str
++    tags: list[str]
++    language: str | None
++    frameworks: list[str]
++    error: str
++    context: str
++    solution: str
++    notes: str
++    path: Path
++
++
++@dataclass
++class ErrorSignature:
++    raw_text: str
++    exception_names: list[str]
++    quoted_terms: list[str]
++    package_names: list[str]
++    commands: list[str]
++    keywords: list[str]
++
++
++@dataclass
++class SearchResult:
++    case: ErrorCase
++    score: float
++    reasons: list[str]
+
+tokens used
+4,280
