@@ -1,0 +1,11 @@
+[ai/yakin-20260526-234017 68b768b] feat(T07): rag.py answer builder + tests
+ 10 files changed, 1736 insertions(+)
+ create mode 100644 reports/yakin/yakin-20260526-234017/codex-reports/T07-report.md
+ create mode 100644 reports/yakin/yakin-20260526-234017/diffs/T07.changed-files
+ create mode 100644 reports/yakin/yakin-20260526-234017/diffs/T07.diffstat
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T06.commit.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T06.push.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T07.stderr.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T07.stdout.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T07.verify.log
+ create mode 100644 tests/test_rag.py

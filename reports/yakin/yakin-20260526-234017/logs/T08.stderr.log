@@ -1,0 +1,1426 @@
+Reading prompt from stdin...
+OpenAI Codex v0.133.0
+--------
+workdir: /Users/uenoyuuta/Debug_Memory
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: medium
+reasoning summaries: none
+session id: 019e64df-5895-76b3-a1d2-6c88e8011973
+--------
+user
+# Role
+
+Fresh Codex implementation worker under Claude Yakin Agent.
+
+# Task
+
+Implement `debug_memory/render.py` and `debug_memory/cli.py`.
+
+These wire everything together into a usable CLI: `python -m debug_memory search --text "..."` and `python -m debug_memory ask --text "..."`.
+
+# Acceptance Criteria
+
+- [ ] `debug_memory/cli.py` exposes `main()` and the file is invokable as `python -m debug_memory ...`
+- [ ] To make `python -m debug_memory` work, create or edit `debug_memory/__main__.py` to call `main()` from `cli.py`
+- [ ] `argparse`-based CLI with two subcommands:
+  - `search --text "<error log>" [--top-k N] [--errors-dir PATH]`
+  - `ask    --text "<error log>" [--top-k N] [--errors-dir PATH]`
+- [ ] Defaults: `--top-k = 3`, `--errors-dir = memory/errors`
+- [ ] `--errors-dir` resolves relative to current working directory (Path.cwd())
+- [ ] `search` prints output starting with `Search Results` header and `==============`, then a numbered list of results showing title, score, status, tags, file path, and reasons (indented)
+- [ ] `ask` prints the output from `build_answer(...)`
+- [ ] If no cases are found in `--errors-dir`, both commands print a clear "no cases found at <dir>" message and exit non-zero
+- [ ] `debug_memory/render.py` contains:
+  - `render_search_results(results: list[SearchResult]) -> str` — the search subcommand uses this
+  - (Optional) `render_answer(answer: str) -> str` — passthrough or formatting helper
+- [ ] Both subcommands work end-to-end with the sample data:
+  - `python -m debug_memory search --text "ModuleNotFoundError: No module named 'dotenv'"` shows the python-dotenv case as #1
+  - `python -m debug_memory ask --text "ModuleNotFoundError: No module named 'dotenv'"` shows "pip install python-dotenv" in the Solution block
+
+# Implementation hints
+
+`debug_memory/__main__.py`:
+```python
+from debug_memory.cli import main
+
+if __name__ == "__main__":
+    main()
+```
+
+`debug_memory/cli.py`:
+```python
+import argparse
+import sys
+from pathlib import Path
+
+from debug_memory.parser import load_error_cases
+from debug_memory.search import search_similar_cases
+from debug_memory.rag import build_answer
+from debug_memory.render import render_search_results
+
+
+def _common_args(p):
+    p.add_argument("--text", required=True)
+    p.add_argument("--top-k", type=int, default=3)
+    p.add_argument("--errors-dir", default="memory/errors")
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(prog="debug-memory")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    s_search = sub.add_parser("search")
+    _common_args(s_search)
+    s_ask = sub.add_parser("ask")
+    _common_args(s_ask)
+
+    args = parser.parse_args(argv)
+    errors_dir = Path(args.errors_dir)
+    cases = load_error_cases(errors_dir)
+    if not cases:
+        print(f"no cases found at {errors_dir}", file=sys.stderr)
+        return 2
+    results = search_similar_cases(args.text, cases, top_k=args.top_k)
+    if args.cmd == "search":
+        print(render_search_results(results))
+    else:
+        print(build_answer(args.text, results))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main() or 0)
+```
+
+`debug_memory/render.py`:
+```python
+def render_search_results(results):
+    lines = ["Search Results", "==============", ""]
+    if not results:
+        lines.append("(no matches)")
+        return "\n".join(lines)
+    for i, r in enumerate(results, 1):
+        lines.append(f"[{i}] {r.case.title}")
+        lines.append(f"    score: {r.score}")
+        lines.append(f"    status: {r.case.status}")
+        lines.append(f"    tags: {', '.join(r.case.tags)}")
+        lines.append(f"    file: {r.case.path}")
+        lines.append(f"    reasons:")
+        for reason in r.reasons:
+            lines.append(f"    - {reason}")
+        lines.append("")
+    return "\n".join(lines).rstrip()
+```
+
+# Allowed Edit Scope
+
+- /Users/uenoyuuta/Debug_Memory/debug_memory/cli.py
+- /Users/uenoyuuta/Debug_Memory/debug_memory/__main__.py
+- /Users/uenoyuuta/Debug_Memory/debug_memory/render.py
+
+# Forbidden Edit Scope
+
+- Everything else, especially debug_memory/parser.py, search.py, rag.py, signature.py, models.py.
+
+# Verification
+
+```
+cd /Users/uenoyuuta/Debug_Memory
+source .venv/bin/activate
+python -m debug_memory search --text "ModuleNotFoundError: No module named 'dotenv'" | head -20
+python -m debug_memory ask --text "ModuleNotFoundError: No module named 'dotenv'" | head -30
+deactivate
+```
+
+Expected:
+- `search` output includes the python-dotenv case as #1 with reasons
+- `ask` output includes `pip install python-dotenv`
+
+# Final Report Format
+
+```json
+{"status": "completed", "changed_files": [...], "summary": "...", "tests_run": [...]}
+```
+
+codex
+I’ll implement only the CLI entrypoint and rendering files in scope, first checking the existing models/search/RAG interfaces and package layout so the wiring matches the code already present.
+exec
+/bin/zsh -lc 'git status --short -- debug_memory/cli.py debug_memory/render.py debug_memory/__main__.py' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+exec
+/bin/zsh -lc "pwd && rg --files debug_memory memory/errors | rg '("'^debug_memory/(models|parser|search|rag|render|cli|__main__|__init__)'"\\.py"'$|''^memory/errors/)'"'" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+/Users/uenoyuuta/Debug_Memory
+debug_memory/search.py
+debug_memory/rag.py
+debug_memory/cli.py
+debug_memory/parser.py
+debug_memory/__init__.py
+debug_memory/render.py
+debug_memory/models.py
+memory/errors/2026-05-26_python-dotenv.md
+memory/errors/2026-05-26_react-undefined-map.md
+memory/errors/2026-05-26_fastapi-cors.md
+
+codex
+The three target modules exist but have no tracked modifications. I found the sample case files; next I’m reading the public data structures and function signatures plus the current target-file contents before making scoped edits.
+exec
+/bin/zsh -lc "sed -n '1,280p' debug_memory/search.py" in /Users/uenoyuuta/Debug_Memory
+exec
+/bin/zsh -lc "sed -n '1,240p' debug_memory/models.py" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass
+class ErrorCase:
+    id: str
+    title: str
+    status: str
+    tags: list[str]
+    language: str | None
+    frameworks: list[str]
+    error: str
+    context: str
+    solution: str
+    notes: str
+    path: Path
+
+
+@dataclass
+class ErrorSignature:
+    raw_text: str
+    exception_names: list[str]
+    quoted_terms: list[str]
+    package_names: list[str]
+    commands: list[str]
+    keywords: list[str]
+
+
+@dataclass
+class SearchResult:
+    case: ErrorCase
+    score: float
+    reasons: list[str]
+
+ succeeded in 0ms:
+from __future__ import annotations
+
+import re
+
+from .models import ErrorCase, SearchResult
+from .signature import extract_signature
+
+
+def _overlap(left: list[str], right: list[str]) -> list[str]:
+    right_terms = {term.casefold() for term in right}
+    return [term for term in left if term.casefold() in right_terms]
+
+
+def _mentioned(query: str, term: str) -> bool:
+    if not term:
+        return False
+    pattern = rf"(?<![\w-]){re.escape(term)}(?![\w-])"
+    return re.search(pattern, query, re.IGNORECASE) is not None
+
+
+def search_similar_cases(
+    query: str, cases: list[ErrorCase], top_k: int = 3
+) -> list[SearchResult]:
+    """Return the highest-scoring previous cases related to a query."""
+    if top_k <= 0:
+        return []
+
+    query_signature = extract_signature(query)
+    results: list[SearchResult] = []
+
+    for case in cases:
+        case_signature = extract_signature(case.error)
+        score = 0.0
+        reasons: list[str] = []
+
+        exception_matches = _overlap(
+            query_signature.exception_names, case_signature.exception_names
+        )
+        if exception_matches:
+            score += 0.35
+            reasons.append(f"exception matched: {exception_matches[0]}")
+
+        quoted_matches = _overlap(
+            query_signature.quoted_terms, case_signature.quoted_terms
+        )
+        if quoted_matches:
+            score += 0.25
+            reasons.append(f"quoted term matched: {quoted_matches[0]}")
+
+        package_matches = _overlap(
+            query_signature.package_names, case_signature.package_names
+        )
+        if package_matches:
+            score += 0.20
+            reasons.append(f"package matched: {package_matches[0]}")
+
+        tag_matches = _overlap(query_signature.keywords, case.tags)
+        if tag_matches:
+            score += 0.12
+            reasons.append(f"tag matched: {tag_matches[0]}")
+
+        if case.language and _mentioned(query, case.language):
+            score += 0.08
+            reasons.append(f"language matched: {case.language}")
+
+        framework_match = next(
+            (framework for framework in case.frameworks if _mentioned(query, framework)),
+            None,
+        )
+        if framework_match:
+            score += 0.08
+            reasons.append(f"framework matched: {framework_match}")
+
+        for keyword in _overlap(query_signature.keywords, case_signature.keywords)[:5]:
+            score += 0.02
+            reasons.append(f"keyword matched: {keyword}")
+
+        if case.status.casefold() == "resolved":
+            score += 0.10
+            reasons.append("status bonus: resolved")
+
+        if score > 0:
+            results.append(
+                SearchResult(case=case, score=round(score, 3), reasons=reasons)
+            )
+
+    results.sort(key=lambda result: (-result.score, result.case.id))
+    return results[:top_k]
+
+exec
+/bin/zsh -lc "sed -n '1,260p' debug_memory/parser.py" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+from __future__ import annotations
+
+import re
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+from .models import ErrorCase
+
+
+_FRONTMATTER_DELIMITER = "---"
+_SECTION_PATTERN = re.compile(
+    r"^##[ \t]+(Error|Context|Solution|Notes)[ \t]*\n(.*?)(?=^##[ \t]+|\Z)",
+    re.MULTILINE | re.DOTALL,
+)
+_REQUIRED_FIELDS = ("id", "title", "status")
+_REQUIRED_SECTIONS = ("Error", "Solution")
+
+
+def _split_frontmatter(text: str, path: Path) -> tuple[dict[str, Any], str]:
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
+        raise ValueError(f"{path}: YAML frontmatter must start with '---'")
+
+    try:
+        closing_delimiter = next(
+            index
+            for index, line in enumerate(lines[1:], start=1)
+            if line.strip() == _FRONTMATTER_DELIMITER
+        )
+    except StopIteration as exc:
+        raise ValueError(f"{path}: YAML frontmatter is missing closing '---'") from exc
+
+    frontmatter_text = "\n".join(lines[1:closing_delimiter])
+    try:
+        metadata = yaml.safe_load(frontmatter_text) or {}
+    except yaml.YAMLError as exc:
+        raise ValueError(f"{path}: invalid YAML frontmatter: {exc}") from exc
+
+    if not isinstance(metadata, dict):
+        raise ValueError(f"{path}: YAML frontmatter must be a mapping")
+
+    body = "\n".join(lines[closing_delimiter + 1 :])
+    return metadata, body
+
+
+def _extract_sections(body: str, path: Path) -> dict[str, str]:
+    sections = {
+        heading: content.strip()
+        for heading, content in _SECTION_PATTERN.findall(body)
+    }
+    for heading in _REQUIRED_SECTIONS:
+        if heading not in sections:
+            raise ValueError(f"{path}: required Markdown section '## {heading}' is missing")
+    return sections
+
+
+def parse_error_case(path: Path) -> ErrorCase:
+    """Parse one Markdown troubleshooting note into an ErrorCase."""
+    metadata, body = _split_frontmatter(path.read_text(encoding="utf-8"), path)
+
+    for field in _REQUIRED_FIELDS:
+        if field not in metadata or metadata[field] is None:
+            raise ValueError(f"{path}: required frontmatter field '{field}' is missing")
+
+    sections = _extract_sections(body, path)
+    return ErrorCase(
+        id=str(metadata["id"]),
+        title=str(metadata["title"]),
+        status=str(metadata["status"]),
+        tags=list(metadata.get("tags") or []),
+        language=metadata.get("language"),
+        frameworks=list(metadata.get("frameworks") or []),
+        error=sections["Error"],
+        context=sections.get("Context", ""),
+        solution=sections["Solution"],
+        notes=sections.get("Notes", ""),
+        path=path,
+    )
+
+
+def load_error_cases(errors_dir: Path) -> list[ErrorCase]:
+    """Parse all Markdown troubleshooting notes in an error memory directory."""
+    return [parse_error_case(path) for path in sorted(errors_dir.glob("*.md"))]
+
+exec
+/bin/zsh -lc "sed -n '1,260p' debug_memory/rag.py" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+from __future__ import annotations
+
+from .models import SearchResult
+
+
+_NO_SOLUTION_SUGGESTION = (
+    "Suggestion: 過去の解決済み事例は見つかりませんでした。"
+    "新しいエラー事例としてMarkdownに記録してください。"
+)
+
+
+def _format_result(result: SearchResult, index: int) -> list[str]:
+    lines = [
+        f"[{index}] {result.case.title}",
+        f"    file: {result.case.path.name}",
+        f"    status: {result.case.status}",
+        f"    score: {result.score:.2f}",
+        "    reasons:",
+    ]
+    if result.reasons:
+        lines.extend(f"    - {reason}" for reason in result.reasons)
+    else:
+        lines.append("    - (none)")
+    return lines
+
+
+def build_answer(query: str, results: list[SearchResult]) -> str:
+    """Render cautious, evidence-backed guidance from previous error cases."""
+    lines = [
+        "Debug Memory Answer",
+        "===================",
+        "",
+        "Input:",
+        query,
+        "",
+    ]
+    count = len(results)
+    suffix = "case" if count == 1 else "cases"
+    lines.extend([f"Found {count} similar {suffix}.", ""])
+
+    candidates = [
+        result
+        for result in results
+        if result.case.status.casefold() == "resolved"
+        and result.case.solution.strip()
+    ]
+
+    if candidates:
+        top_candidate = max(candidates, key=lambda result: result.score)
+        lines.extend(
+            [
+                "Top solution candidate:",
+                top_candidate.case.title,
+                "",
+                "Solution:",
+                top_candidate.case.solution,
+            ]
+        )
+        if top_candidate.case.notes.strip():
+            lines.extend(["", "Notes:", top_candidate.case.notes])
+        lines.extend(["", "Evidence:"])
+        for index, result in enumerate(results, start=1):
+            lines.extend(_format_result(result, index))
+        return "\n".join(lines)
+
+    lines.extend(
+        [
+            "No resolved solution candidate found.",
+            "",
+            "Similar unresolved cases:",
+        ]
+    )
+    if results:
+        for index, result in enumerate(results, start=1):
+            lines.extend(_format_result(result, index))
+    else:
+        lines.append("(none)")
+    lines.extend(["", _NO_SOLUTION_SUGGESTION])
+    return "\n".join(lines)
+
+exec
+/bin/zsh -lc "sed -n '1,240p' debug_memory/cli.py; sed -n '1,240p' debug_memory/render.py; test -e debug_memory/__main__.py && sed -n '1,120p' debug_memory/__main__.py || true" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+def main():
+    pass
+
+
+codex
+The existing interfaces are straightforward: `SearchResult` carries `case`, `score`, and `reasons`; `build_answer(query, results)` already formats the `ask` response. I’m adding argument parsing, current-directory path resolution, the module entrypoint, and a renderer that exposes the evidence fields required for `search`.
+apply patch
+patch: completed
+/Users/uenoyuuta/Debug_Memory/debug_memory/__main__.py
+/Users/uenoyuuta/Debug_Memory/debug_memory/cli.py
+/Users/uenoyuuta/Debug_Memory/debug_memory/render.py
+diff --git a/debug_memory/__main__.py b/debug_memory/__main__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..a049ad7aea97f34e4aab96cc8d30e116fa89790d
+--- /dev/null
++++ b/debug_memory/__main__.py
+@@ -0,0 +1,5 @@
++from .cli import main
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/debug_memory/cli.py b/debug_memory/cli.py
+index 336e825c89f5269f2c2cba25404b0abf254bc43e..580ac802dc94ae49972d9b880ed1da8e16ee7fd5
+--- a/debug_memory/cli.py
++++ b/debug_memory/cli.py
+@@ -1,2 +1,61 @@
+-def main():
+-    pass
++from __future__ import annotations
++
++import argparse
++import sys
++from pathlib import Path
++
++from .parser import load_error_cases
++from .rag import build_answer
++from .render import render_search_results
++from .search import search_similar_cases
++
++
++def _add_common_args(parser: argparse.ArgumentParser) -> None:
++    parser.add_argument("--text", required=True, help="Error message or log to search for.")
++    parser.add_argument(
++        "--top-k",
++        type=int,
++        default=3,
++        help="Maximum number of similar cases to return (default: 3).",
++    )
++    parser.add_argument(
++        "--errors-dir",
++        default="memory/errors",
++        help="Directory containing Markdown error cases (default: memory/errors).",
++    )
++
++
++def _resolve_errors_dir(value: str) -> Path:
++    path = Path(value).expanduser()
++    if not path.is_absolute():
++        path = Path.cwd() / path
++    return path.resolve()
++
++
++def main(argv: list[str] | None = None) -> int:
++    parser = argparse.ArgumentParser(prog="debug-memory")
++    subcommands = parser.add_subparsers(dest="command", required=True)
++
++    search_parser = subcommands.add_parser("search", help="List similar error cases.")
++    _add_common_args(search_parser)
++
++    ask_parser = subcommands.add_parser("ask", help="Render a solution candidate.")
++    _add_common_args(ask_parser)
++
++    args = parser.parse_args(argv)
++    errors_dir = _resolve_errors_dir(args.errors_dir)
++    cases = load_error_cases(errors_dir)
++    if not cases:
++        print(f"no cases found at {errors_dir}", file=sys.stderr)
++        return 2
++
++    results = search_similar_cases(args.text, cases, top_k=args.top_k)
++    if args.command == "search":
++        print(render_search_results(results))
++    else:
++        print(build_answer(args.text, results))
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/debug_memory/render.py b/debug_memory/render.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..4df342d1d8849499dd7e56512c2901f57495796c
+--- a/debug_memory/render.py
++++ b/debug_memory/render.py
+@@ -1 +1,35 @@
++from __future__ import annotations
++
++from .models import SearchResult
++
++
++def render_search_results(results: list[SearchResult]) -> str:
++    """Render ranked matches and the evidence supporting each result."""
++    lines = ["Search Results", "==============", ""]
++    if not results:
++        lines.append("(no matches)")
++        return "\n".join(lines)
++
++    for index, result in enumerate(results, start=1):
++        lines.extend(
++            [
++                f"[{index}] {result.case.title}",
++                f"    score: {result.score:.3f}",
++                f"    status: {result.case.status}",
++                f"    tags: {', '.join(result.case.tags)}",
++                f"    file: {result.case.path}",
++                "    reasons:",
++            ]
++        )
++        if result.reasons:
++            lines.extend(f"    - {reason}" for reason in result.reasons)
++        else:
++            lines.append("    - (none)")
++        lines.append("")
++
++    return "\n".join(lines).rstrip()
+ 
++
++def render_answer(answer: str) -> str:
++    """Return an already-built answer for callers needing a render hook."""
++    return answer
+
+diff --git a/debug_memory/__main__.py b/debug_memory/__main__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..a049ad7aea97f34e4aab96cc8d30e116fa89790d
+--- /dev/null
++++ b/debug_memory/__main__.py
+@@ -0,0 +1,5 @@
++from .cli import main
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/debug_memory/cli.py b/debug_memory/cli.py
+index 336e825c89f5269f2c2cba25404b0abf254bc43e..580ac802dc94ae49972d9b880ed1da8e16ee7fd5
+--- a/debug_memory/cli.py
++++ b/debug_memory/cli.py
+@@ -1,2 +1,61 @@
+-def main():
+-    pass
++from __future__ import annotations
++
++import argparse
++import sys
++from pathlib import Path
++
++from .parser import load_error_cases
++from .rag import build_answer
++from .render import render_search_results
++from .search import search_similar_cases
++
++
++def _add_common_args(parser: argparse.ArgumentParser) -> None:
++    parser.add_argument("--text", required=True, help="Error message or log to search for.")
++    parser.add_argument(
++        "--top-k",
++        type=int,
++        default=3,
++        help="Maximum number of similar cases to return (default: 3).",
++    )
++    parser.add_argument(
++        "--errors-dir",
++        default="memory/errors",
++        help="Directory containing Markdown error cases (default: memory/errors).",
++    )
++
++
++def _resolve_errors_dir(value: str) -> Path:
++    path = Path(value).expanduser()
++    if not path.is_absolute():
++        path = Path.cwd() / path
++    return path.resolve()
++
++
++def main(argv: list[str] | None = None) -> int:
++    parser = argparse.ArgumentParser(prog="debug-memory")
++    subcommands = parser.add_subparsers(dest="command", required=True)
++
++    search_parser = subcommands.add_parser("search", help="List similar error cases.")
++    _add_common_args(search_parser)
++
++    ask_parser = subcommands.add_parser("ask", help="Render a solution candidate.")
++    _add_common_args(ask_parser)
++
++    args = parser.parse_args(argv)
++    errors_dir = _resolve_errors_dir(args.errors_dir)
++    cases = load_error_cases(errors_dir)
++    if not cases:
++        print(f"no cases found at {errors_dir}", file=sys.stderr)
++        return 2
++
++    results = search_similar_cases(args.text, cases, top_k=args.top_k)
++    if args.command == "search":
++        print(render_search_results(results))
++    else:
++        print(build_answer(args.text, results))
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/debug_memory/render.py b/debug_memory/render.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..4df342d1d8849499dd7e56512c2901f57495796c
+--- a/debug_memory/render.py
++++ b/debug_memory/render.py
+@@ -1 +1,35 @@
++from __future__ import annotations
++
++from .models import SearchResult
++
++
++def render_search_results(results: list[SearchResult]) -> str:
++    """Render ranked matches and the evidence supporting each result."""
++    lines = ["Search Results", "==============", ""]
++    if not results:
++        lines.append("(no matches)")
++        return "\n".join(lines)
++
++    for index, result in enumerate(results, start=1):
++        lines.extend(
++            [
++                f"[{index}] {result.case.title}",
++                f"    score: {result.score:.3f}",
++                f"    status: {result.case.status}",
++                f"    tags: {', '.join(result.case.tags)}",
++                f"    file: {result.case.path}",
++                "    reasons:",
++            ]
++        )
++        if result.reasons:
++            lines.extend(f"    - {reason}" for reason in result.reasons)
++        else:
++            lines.append("    - (none)")
++        lines.append("")
++
++    return "\n".join(lines).rstrip()
+ 
++
++def render_answer(answer: str) -> str:
++    """Return an already-built answer for callers needing a render hook."""
++    return answer
+
+codex
+The scoped files are now implemented. I’m checking the resulting files and exercising both commands with the sample input, including the empty-directory failure path, to confirm invocation and output behavior.
+exec
+/bin/zsh -lc "sed -n '1,260p' debug_memory/cli.py
+sed -n '1,220p' debug_memory/render.py
+sed -n '1,80p' debug_memory/__main__.py" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+from .parser import load_error_cases
+from .rag import build_answer
+from .render import render_search_results
+from .search import search_similar_cases
+
+
+def _add_common_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--text", required=True, help="Error message or log to search for.")
+    parser.add_argument(
+        "--top-k",
+        type=int,
+        default=3,
+        help="Maximum number of similar cases to return (default: 3).",
+    )
+    parser.add_argument(
+        "--errors-dir",
+        default="memory/errors",
+        help="Directory containing Markdown error cases (default: memory/errors).",
+    )
+
+
+def _resolve_errors_dir(value: str) -> Path:
+    path = Path(value).expanduser()
+    if not path.is_absolute():
+        path = Path.cwd() / path
+    return path.resolve()
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="debug-memory")
+    subcommands = parser.add_subparsers(dest="command", required=True)
+
+    search_parser = subcommands.add_parser("search", help="List similar error cases.")
+    _add_common_args(search_parser)
+
+    ask_parser = subcommands.add_parser("ask", help="Render a solution candidate.")
+    _add_common_args(ask_parser)
+
+    args = parser.parse_args(argv)
+    errors_dir = _resolve_errors_dir(args.errors_dir)
+    cases = load_error_cases(errors_dir)
+    if not cases:
+        print(f"no cases found at {errors_dir}", file=sys.stderr)
+        return 2
+
+    results = search_similar_cases(args.text, cases, top_k=args.top_k)
+    if args.command == "search":
+        print(render_search_results(results))
+    else:
+        print(build_answer(args.text, results))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+from __future__ import annotations
+
+from .models import SearchResult
+
+
+def render_search_results(results: list[SearchResult]) -> str:
+    """Render ranked matches and the evidence supporting each result."""
+    lines = ["Search Results", "==============", ""]
+    if not results:
+        lines.append("(no matches)")
+        return "\n".join(lines)
+
+    for index, result in enumerate(results, start=1):
+        lines.extend(
+            [
+                f"[{index}] {result.case.title}",
+                f"    score: {result.score:.3f}",
+                f"    status: {result.case.status}",
+                f"    tags: {', '.join(result.case.tags)}",
+                f"    file: {result.case.path}",
+                "    reasons:",
+            ]
+        )
+        if result.reasons:
+            lines.extend(f"    - {reason}" for reason in result.reasons)
+        else:
+            lines.append("    - (none)")
+        lines.append("")
+
+    return "\n".join(lines).rstrip()
+
+
+def render_answer(answer: str) -> str:
+    """Return an already-built answer for callers needing a render hook."""
+    return answer
+from .cli import main
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
+exec
+/bin/zsh -lc 'git status --short -- debug_memory/cli.py debug_memory/render.py debug_memory/__main__.py' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+ M debug_memory/cli.py
+ M debug_memory/render.py
+?? debug_memory/__main__.py
+
+exec
+/bin/zsh -lc 'source .venv/bin/activate
+python -m debug_memory search --text "missing" --errors-dir /private/tmp/debug-memory-no-cases' in /Users/uenoyuuta/Debug_Memory
+ exited 2 in 0ms:
+no cases found at /private/tmp/debug-memory-no-cases
+
+exec
+/bin/zsh -lc "set -o pipefail
+source .venv/bin/activate
+python -m debug_memory search --text \"ModuleNotFoundError: No module named 'dotenv'\" | head -20" in /Users/uenoyuuta/Debug_Memory
+exec
+/bin/zsh -lc "set -o pipefail
+source .venv/bin/activate
+python -m debug_memory ask --text \"ModuleNotFoundError: No module named 'dotenv'\" | head -30" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+Debug Memory Answer
+===================
+
+Input:
+ModuleNotFoundError: No module named 'dotenv'
+
+Found 3 similar cases.
+
+Top solution candidate:
+Pythonでdotenvが読み込めない
+
+Solution:
+```bash
+pip install python-dotenv
+```
+
+パッケージ名は `dotenv` ではなく `python-dotenv`。インポート名と pip パッケージ名が違うので注意。
+
+Notes:
+仮想環境が違う場合もあるので、`which python` と `pip list` を確認する。VSCode などのIDEで別の venv を指している場合も多い。
+
+Evidence:
+[1] Pythonでdotenvが読み込めない
+    file: 2026-05-26_python-dotenv.md
+    status: resolved
+    score: 0.90
+    reasons:
+    - exception matched: ModuleNotFoundError
+    - quoted term matched: dotenv
+    - package matched: dotenv
+
+ succeeded in 0ms:
+Search Results
+==============
+
+[1] Pythonでdotenvが読み込めない
+    score: 0.900
+    status: resolved
+    tags: python, dotenv, venv
+    file: /Users/uenoyuuta/Debug_Memory/memory/errors/2026-05-26_python-dotenv.md
+    reasons:
+    - exception matched: ModuleNotFoundError
+    - quoted term matched: dotenv
+    - package matched: dotenv
+    - status bonus: resolved
+
+[2] FastAPIでCORSエラーが出る
+    score: 0.100
+    status: resolved
+    tags: fastapi, cors, python
+    file: /Users/uenoyuuta/Debug_Memory/memory/errors/2026-05-26_fastapi-cors.md
+    reasons:
+
+diff --git a/debug_memory/__main__.py b/debug_memory/__main__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..a049ad7aea97f34e4aab96cc8d30e116fa89790d
+--- /dev/null
++++ b/debug_memory/__main__.py
+@@ -0,0 +1,5 @@
++from .cli import main
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/debug_memory/cli.py b/debug_memory/cli.py
+index 336e825c89f5269f2c2cba25404b0abf254bc43e..580ac802dc94ae49972d9b880ed1da8e16ee7fd5
+--- a/debug_memory/cli.py
++++ b/debug_memory/cli.py
+@@ -1,2 +1,61 @@
+-def main():
+-    pass
++from __future__ import annotations
++
++import argparse
++import sys
++from pathlib import Path
++
++from .parser import load_error_cases
++from .rag import build_answer
++from .render import render_search_results
++from .search import search_similar_cases
++
++
++def _add_common_args(parser: argparse.ArgumentParser) -> None:
++    parser.add_argument("--text", required=True, help="Error message or log to search for.")
++    parser.add_argument(
++        "--top-k",
++        type=int,
++        default=3,
++        help="Maximum number of similar cases to return (default: 3).",
++    )
++    parser.add_argument(
++        "--errors-dir",
++        default="memory/errors",
++        help="Directory containing Markdown error cases (default: memory/errors).",
++    )
++
++
++def _resolve_errors_dir(value: str) -> Path:
++    path = Path(value).expanduser()
++    if not path.is_absolute():
++        path = Path.cwd() / path
++    return path.resolve()
++
++
++def main(argv: list[str] | None = None) -> int:
++    parser = argparse.ArgumentParser(prog="debug-memory")
++    subcommands = parser.add_subparsers(dest="command", required=True)
++
++    search_parser = subcommands.add_parser("search", help="List similar error cases.")
++    _add_common_args(search_parser)
++
++    ask_parser = subcommands.add_parser("ask", help="Render a solution candidate.")
++    _add_common_args(ask_parser)
++
++    args = parser.parse_args(argv)
++    errors_dir = _resolve_errors_dir(args.errors_dir)
++    cases = load_error_cases(errors_dir)
++    if not cases:
++        print(f"no cases found at {errors_dir}", file=sys.stderr)
++        return 2
++
++    results = search_similar_cases(args.text, cases, top_k=args.top_k)
++    if args.command == "search":
++        print(render_search_results(results))
++    else:
++        print(build_answer(args.text, results))
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/debug_memory/render.py b/debug_memory/render.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..4df342d1d8849499dd7e56512c2901f57495796c
+--- a/debug_memory/render.py
++++ b/debug_memory/render.py
+@@ -1 +1,35 @@
++from __future__ import annotations
++
++from .models import SearchResult
++
++
++def render_search_results(results: list[SearchResult]) -> str:
++    """Render ranked matches and the evidence supporting each result."""
++    lines = ["Search Results", "==============", ""]
++    if not results:
++        lines.append("(no matches)")
++        return "\n".join(lines)
++
++    for index, result in enumerate(results, start=1):
++        lines.extend(
++            [
++                f"[{index}] {result.case.title}",
++                f"    score: {result.score:.3f}",
++                f"    status: {result.case.status}",
++                f"    tags: {', '.join(result.case.tags)}",
++                f"    file: {result.case.path}",
++                "    reasons:",
++            ]
++        )
++        if result.reasons:
++            lines.extend(f"    - {reason}" for reason in result.reasons)
++        else:
++            lines.append("    - (none)")
++        lines.append("")
++
++    return "\n".join(lines).rstrip()
+ 
++
++def render_answer(answer: str) -> str:
++    """Return an already-built answer for callers needing a render hook."""
++    return answer
+
+codex
+Both sample invocations pass: `search` ranks the dotenv case first with matching reasons, and `ask` includes `pip install python-dotenv`. The no-case path returns exit code `2` with the resolved directory in its message; I’m now running the available automated tests, if present, to catch interface regressions.
+exec
+/bin/zsh -lc 'command -v codex-distill' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+/Users/uenoyuuta/.local/bin/codex-distill
+
+exec
+/bin/zsh -lc "rg --files -g 'test*.py' -g '*_test.py' -g 'pyproject.toml' -g 'pytest.ini' -g 'setup.cfg'" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+pyproject.toml
+tests/test_rag.py
+tests/test_signature.py
+tests/test_search.py
+tests/test_parser.py
+
+diff --git a/debug_memory/__main__.py b/debug_memory/__main__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..a049ad7aea97f34e4aab96cc8d30e116fa89790d
+--- /dev/null
++++ b/debug_memory/__main__.py
+@@ -0,0 +1,5 @@
++from .cli import main
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/debug_memory/cli.py b/debug_memory/cli.py
+index 336e825c89f5269f2c2cba25404b0abf254bc43e..580ac802dc94ae49972d9b880ed1da8e16ee7fd5
+--- a/debug_memory/cli.py
++++ b/debug_memory/cli.py
+@@ -1,2 +1,61 @@
+-def main():
+-    pass
++from __future__ import annotations
++
++import argparse
++import sys
++from pathlib import Path
++
++from .parser import load_error_cases
++from .rag import build_answer
++from .render import render_search_results
++from .search import search_similar_cases
++
++
++def _add_common_args(parser: argparse.ArgumentParser) -> None:
++    parser.add_argument("--text", required=True, help="Error message or log to search for.")
++    parser.add_argument(
++        "--top-k",
++        type=int,
++        default=3,
++        help="Maximum number of similar cases to return (default: 3).",
++    )
++    parser.add_argument(
++        "--errors-dir",
++        default="memory/errors",
++        help="Directory containing Markdown error cases (default: memory/errors).",
++    )
++
++
++def _resolve_errors_dir(value: str) -> Path:
++    path = Path(value).expanduser()
++    if not path.is_absolute():
++        path = Path.cwd() / path
++    return path.resolve()
++
++
++def main(argv: list[str] | None = None) -> int:
++    parser = argparse.ArgumentParser(prog="debug-memory")
++    subcommands = parser.add_subparsers(dest="command", required=True)
++
++    search_parser = subcommands.add_parser("search", help="List similar error cases.")
++    _add_common_args(search_parser)
++
++    ask_parser = subcommands.add_parser("ask", help="Render a solution candidate.")
++    _add_common_args(ask_parser)
++
++    args = parser.parse_args(argv)
++    errors_dir = _resolve_errors_dir(args.errors_dir)
++    cases = load_error_cases(errors_dir)
++    if not cases:
++        print(f"no cases found at {errors_dir}", file=sys.stderr)
++        return 2
++
++    results = search_similar_cases(args.text, cases, top_k=args.top_k)
++    if args.command == "search":
++        print(render_search_results(results))
++    else:
++        print(build_answer(args.text, results))
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/debug_memory/render.py b/debug_memory/render.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..4df342d1d8849499dd7e56512c2901f57495796c
+--- a/debug_memory/render.py
++++ b/debug_memory/render.py
+@@ -1 +1,35 @@
++from __future__ import annotations
++
++from .models import SearchResult
++
++
++def render_search_results(results: list[SearchResult]) -> str:
++    """Render ranked matches and the evidence supporting each result."""
++    lines = ["Search Results", "==============", ""]
++    if not results:
++        lines.append("(no matches)")
++        return "\n".join(lines)
++
++    for index, result in enumerate(results, start=1):
++        lines.extend(
++            [
++                f"[{index}] {result.case.title}",
++                f"    score: {result.score:.3f}",
++                f"    status: {result.case.status}",
++                f"    tags: {', '.join(result.case.tags)}",
++                f"    file: {result.case.path}",
++                "    reasons:",
++            ]
++        )
++        if result.reasons:
++            lines.extend(f"    - {reason}" for reason in result.reasons)
++        else:
++            lines.append("    - (none)")
++        lines.append("")
++
++    return "\n".join(lines).rstrip()
+ 
++
++def render_answer(answer: str) -> str:
++    """Return an already-built answer for callers needing a render hook."""
++    return answer
+
+exec
+/bin/zsh -lc 'codex-distill -p "Did the test suite pass? Return only PASS with the number of tests passed, or FAIL with failing test names and exact failure locations." -- .venv/bin/python -m pytest' in /Users/uenoyuuta/Debug_Memory
+diff --git a/debug_memory/__main__.py b/debug_memory/__main__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..a049ad7aea97f34e4aab96cc8d30e116fa89790d
+--- /dev/null
++++ b/debug_memory/__main__.py
+@@ -0,0 +1,5 @@
++from .cli import main
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/debug_memory/cli.py b/debug_memory/cli.py
+index 336e825c89f5269f2c2cba25404b0abf254bc43e..580ac802dc94ae49972d9b880ed1da8e16ee7fd5
+--- a/debug_memory/cli.py
++++ b/debug_memory/cli.py
+@@ -1,2 +1,61 @@
+-def main():
+-    pass
++from __future__ import annotations
++
++import argparse
++import sys
++from pathlib import Path
++
++from .parser import load_error_cases
++from .rag import build_answer
++from .render import render_search_results
++from .search import search_similar_cases
++
++
++def _add_common_args(parser: argparse.ArgumentParser) -> None:
++    parser.add_argument("--text", required=True, help="Error message or log to search for.")
++    parser.add_argument(
++        "--top-k",
++        type=int,
++        default=3,
++        help="Maximum number of similar cases to return (default: 3).",
++    )
++    parser.add_argument(
++        "--errors-dir",
++        default="memory/errors",
++        help="Directory containing Markdown error cases (default: memory/errors).",
++    )
++
++
++def _resolve_errors_dir(value: str) -> Path:
++    path = Path(value).expanduser()
++    if not path.is_absolute():
++        path = Path.cwd() / path
++    return path.resolve()
++
++
++def main(argv: list[str] | None = None) -> int:
++    parser = argparse.ArgumentParser(prog="debug-memory")
++    subcommands = parser.add_subparsers(dest="command", required=True)
++
++    search_parser = subcommands.add_parser("search", help="List similar error cases.")
++    _add_common_args(search_parser)
++
++    ask_parser = subcommands.add_parser("ask", help="Render a solution candidate.")
++    _add_common_args(ask_parser)
++
++    args = parser.parse_args(argv)
++    errors_dir = _resolve_errors_dir(args.errors_dir)
++    cases = load_error_cases(errors_dir)
++    if not cases:
++        print(f"no cases found at {errors_dir}", file=sys.stderr)
++        return 2
++
++    results = search_similar_cases(args.text, cases, top_k=args.top_k)
++    if args.command == "search":
++        print(render_search_results(results))
++    else:
++        print(build_answer(args.text, results))
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/debug_memory/render.py b/debug_memory/render.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..4df342d1d8849499dd7e56512c2901f57495796c
+--- a/debug_memory/render.py
++++ b/debug_memory/render.py
+@@ -1 +1,35 @@
++from __future__ import annotations
++
++from .models import SearchResult
++
++
++def render_search_results(results: list[SearchResult]) -> str:
++    """Render ranked matches and the evidence supporting each result."""
++    lines = ["Search Results", "==============", ""]
++    if not results:
++        lines.append("(no matches)")
++        return "\n".join(lines)
++
++    for index, result in enumerate(results, start=1):
++        lines.extend(
++            [
++                f"[{index}] {result.case.title}",
++                f"    score: {result.score:.3f}",
++                f"    status: {result.case.status}",
++                f"    tags: {', '.join(result.case.tags)}",
++                f"    file: {result.case.path}",
++                "    reasons:",
++            ]
++        )
++        if result.reasons:
++            lines.extend(f"    - {reason}" for reason in result.reasons)
++        else:
++            lines.append("    - (none)")
++        lines.append("")
++
++    return "\n".join(lines).rstrip()
+ 
++
++def render_answer(answer: str) -> str:
++    """Return an already-built answer for callers needing a render hook."""
++    return answer
+
+ succeeded in 222ms:
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-9.0.3, pluggy-1.6.0
+rootdir: /Users/uenoyuuta/Debug_Memory
+configfile: pyproject.toml
+collected 21 items
+
+tests/test_parser.py ..........                                          [ 47%]
+tests/test_rag.py ...                                                    [ 61%]
+tests/test_search.py .....                                               [ 85%]
+tests/test_signature.py ...                                              [100%]
+
+============================== 21 passed in 0.05s ==============================
+
+codex
+{"status":"completed","changed_files":["debug_memory/cli.py","debug_memory/render.py","debug_memory/__main__.py"],"summary":"Implemented the argparse CLI for `search` and `ask`, current-working-directory resolution for `--errors-dir`, non-zero handling when no cases exist, search result rendering with evidence details, and the `python -m debug_memory` entrypoint.","tests_run":["python -m debug_memory search --text \"ModuleNotFoundError: No module named 'dotenv'\" | head -20: passed; dotenv case ranked #1 with reasons","python -m debug_memory ask --text \"ModuleNotFoundError: No module named 'dotenv'\" | head -30: passed; output includes `pip install python-dotenv`","python -m debug_memory search --text \"missing\" --errors-dir /private/tmp/debug-memory-no-cases: passed; printed no-cases message and exited 2",".venv/bin/python -m pytest: passed; 21 tests passed"]}
+diff --git a/debug_memory/__main__.py b/debug_memory/__main__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..a049ad7aea97f34e4aab96cc8d30e116fa89790d
+--- /dev/null
++++ b/debug_memory/__main__.py
+@@ -0,0 +1,5 @@
++from .cli import main
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/debug_memory/cli.py b/debug_memory/cli.py
+index 336e825c89f5269f2c2cba25404b0abf254bc43e..580ac802dc94ae49972d9b880ed1da8e16ee7fd5
+--- a/debug_memory/cli.py
++++ b/debug_memory/cli.py
+@@ -1,2 +1,61 @@
+-def main():
+-    pass
++from __future__ import annotations
++
++import argparse
++import sys
++from pathlib import Path
++
++from .parser import load_error_cases
++from .rag import build_answer
++from .render import render_search_results
++from .search import search_similar_cases
++
++
++def _add_common_args(parser: argparse.ArgumentParser) -> None:
++    parser.add_argument("--text", required=True, help="Error message or log to search for.")
++    parser.add_argument(
++        "--top-k",
++        type=int,
++        default=3,
++        help="Maximum number of similar cases to return (default: 3).",
++    )
++    parser.add_argument(
++        "--errors-dir",
++        default="memory/errors",
++        help="Directory containing Markdown error cases (default: memory/errors).",
++    )
++
++
++def _resolve_errors_dir(value: str) -> Path:
++    path = Path(value).expanduser()
++    if not path.is_absolute():
++        path = Path.cwd() / path
++    return path.resolve()
++
++
++def main(argv: list[str] | None = None) -> int:
++    parser = argparse.ArgumentParser(prog="debug-memory")
++    subcommands = parser.add_subparsers(dest="command", required=True)
++
++    search_parser = subcommands.add_parser("search", help="List similar error cases.")
++    _add_common_args(search_parser)
++
++    ask_parser = subcommands.add_parser("ask", help="Render a solution candidate.")
++    _add_common_args(ask_parser)
++
++    args = parser.parse_args(argv)
++    errors_dir = _resolve_errors_dir(args.errors_dir)
++    cases = load_error_cases(errors_dir)
++    if not cases:
++        print(f"no cases found at {errors_dir}", file=sys.stderr)
++        return 2
++
++    results = search_similar_cases(args.text, cases, top_k=args.top_k)
++    if args.command == "search":
++        print(render_search_results(results))
++    else:
++        print(build_answer(args.text, results))
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/debug_memory/render.py b/debug_memory/render.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..4df342d1d8849499dd7e56512c2901f57495796c
+--- a/debug_memory/render.py
++++ b/debug_memory/render.py
+@@ -1 +1,35 @@
++from __future__ import annotations
++
++from .models import SearchResult
++
++
++def render_search_results(results: list[SearchResult]) -> str:
++    """Render ranked matches and the evidence supporting each result."""
++    lines = ["Search Results", "==============", ""]
++    if not results:
++        lines.append("(no matches)")
++        return "\n".join(lines)
++
++    for index, result in enumerate(results, start=1):
++        lines.extend(
++            [
++                f"[{index}] {result.case.title}",
++                f"    score: {result.score:.3f}",
++                f"    status: {result.case.status}",
++                f"    tags: {', '.join(result.case.tags)}",
++                f"    file: {result.case.path}",
++                "    reasons:",
++            ]
++        )
++        if result.reasons:
++            lines.extend(f"    - {reason}" for reason in result.reasons)
++        else:
++            lines.append("    - (none)")
++        lines.append("")
++
++    return "\n".join(lines).rstrip()
+ 
++
++def render_answer(answer: str) -> str:
++    """Return an already-built answer for callers needing a render hook."""
++    return answer
+
+tokens used
+14,695
