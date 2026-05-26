@@ -10,7 +10,7 @@ yakin-20260526-234017
 
 ## Current Branch
 
-(pending — main is empty, will be initialized first)
+ai/yakin-20260526-234017
 
 ## Base Branch
 
@@ -22,17 +22,18 @@ Debug Memory Vol.1 を実装する: Markdownベースのローカルエラー検
 
 ## Tracking Issue
 
-- URL: (pending)
-- Issue Number: (pending)
-- Last Updated At:
-- Last Update Event:
+- URL: https://github.com/youbo0129ueno-star/Debug_Memory/issues/1
+- Issue Number: 1
+- Last Updated At: 2026-05-26T23:44:00+09:00
+- Last Update Event: Issue created
 - Update Failures:
 
 ## Notion
 
-- Report Page URL: (pending)
-- Report Page ID: (pending)
+- Report Page URL: https://www.notion.so/36c3b643382e81389412de880d58ad2f
+- Report Page ID: 36c3b643-382e-8138-9412-de880d58ad2f
 - Parent Page / Database: Yakin-Agent-Output_Space (36b3b643382e80348b11dddc689826b1)
+- Created At: 2026-05-26T23:45:00+09:00
 - Created At:
 - Last Updated At:
 - Update Failures:

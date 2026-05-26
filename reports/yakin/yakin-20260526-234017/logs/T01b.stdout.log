@@ -1,0 +1,9 @@
+{
+  "status": "partial",
+  "changed_files": ["pyproject.toml"],
+  "summary": "Added `[tool.setuptools.packages.find]` with `include = [\"debug_memory*\"]` so setuptools only discovers the intended package. The requested editable install could not complete because pip attempted to download the isolated build dependency `setuptools>=61`, but network access is unavailable in this environment.",
+  "tests_run": [
+    "source .venv/bin/activate && pip install -e .: failed before package build because setuptools build dependency could not be downloaded",
+    "source .venv/bin/activate && python -c \"import debug_memory; print(debug_memory.__version__)\": passed, printed 0.1.0"
+  ]
+}

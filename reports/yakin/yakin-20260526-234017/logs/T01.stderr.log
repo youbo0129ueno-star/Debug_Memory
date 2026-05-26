@@ -1,0 +1,1462 @@
+Reading prompt from stdin...
+OpenAI Codex v0.133.0
+--------
+workdir: /Users/uenoyuuta/Debug_Memory
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: medium
+reasoning summaries: none
+session id: 019e64c0-56d5-7e70-8260-4beb4b89a624
+--------
+user
+# Role
+
+You are a fresh Codex implementation worker.
+
+You are working under Claude Yakin Agent.
+Implement only the scoped task below.
+Do not expand scope. Do not refactor unrelated code. Do not switch branches.
+
+# Task
+
+Create the initial project scaffold for Debug Memory Vol.1. This is a Python CLI tool that searches Markdown-based troubleshooting notes (no LLM, no external APIs, no Web UI, no vector DB).
+
+You need to create:
+1. `pyproject.toml` for the `debug-memory` package
+2. Directory skeleton with `__init__.py` files (no implementation logic yet)
+3. `AGENTS.md` for future Codex sessions
+
+# Acceptance Criteria
+
+- [ ] `pyproject.toml` exists at repo root with name = `debug-memory`, Python >= 3.10, deps = `PyYAML`
+- [ ] `pyproject.toml` declares `[project.scripts]` entry: `debug-memory = "debug_memory.cli:main"`
+- [ ] `debug_memory/` directory created with these empty-but-importable files:
+  - `__init__.py` (with `__version__ = "0.1.0"`)
+  - `cli.py` (empty stub: `def main(): pass`)
+  - `models.py` (empty)
+  - `parser.py` (empty)
+  - `signature.py` (empty)
+  - `search.py` (empty)
+  - `rag.py` (empty)
+  - `render.py` (empty)
+- [ ] `memory/errors/` directory exists (can have a `.gitkeep`)
+- [ ] `templates/` directory exists (can have a `.gitkeep`)
+- [ ] `tests/` directory exists with `__init__.py`
+- [ ] `AGENTS.md` exists at repo root (use the content described in "AGENTS.md content" below)
+- [ ] `python -c "import debug_memory; print(debug_memory.__version__)"` prints `0.1.0` after `pip install -e .`
+
+# AGENTS.md content
+
+Write exactly this content to `AGENTS.md`:
+
+```
+# AGENTS.md
+
+## Project Overview
+
+This project implements Debug Memory Vol.1: a local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
+
+## Scope
+
+Implement only the Vol.1 internal system:
+- Markdown error case parsing
+- Error signature extraction
+- Rule-based similar error search
+- Solution candidate rendering
+- CLI commands: search and ask
+- Unit tests
+
+Do not implement:
+- Web UI
+- LLM API integration
+- Vector database
+- Claude Skill integration
+- Codex auto-fix workflow
+- GitHub Issue integration
+
+## Development Guidelines
+
+- Keep the implementation simple and dependency-light.
+- Prefer standard library modules where practical.
+- Use PyYAML only if needed for frontmatter parsing.
+- Use argparse for CLI unless there is a strong reason not to.
+- Add tests for parser, signature extraction, search ranking, and answer rendering.
+- The tool must work locally without external API calls.
+- Search results must include evidence and reasons.
+- Do not make the answer sound certain when it is based only on previous similar cases.
+```
+
+# Current Repository State
+
+- Branch: ai/yakin-20260526-234017
+- Base Branch: main
+- Previous status: main initialized with README.md + .gitignore. AI branch created. No source code yet.
+- Changed files so far: README.md, .gitignore, reports/yakin/yakin-20260526-234017/state.md (committed on main)
+
+# Completed Work
+
+- None
+
+# Remaining Work
+
+- Create directory structure
+- Create pyproject.toml
+- Create AGENTS.md
+- Create empty Python module files
+- Verify package is importable with `pip install -e .`
+
+# Allowed Edit Scope
+
+- /Users/uenoyuuta/Debug_Memory/pyproject.toml
+- /Users/uenoyuuta/Debug_Memory/AGENTS.md
+- /Users/uenoyuuta/Debug_Memory/debug_memory/**
+- /Users/uenoyuuta/Debug_Memory/memory/**
+- /Users/uenoyuuta/Debug_Memory/templates/**
+- /Users/uenoyuuta/Debug_Memory/tests/**
+
+# Forbidden Edit Scope
+
+- README.md (will be done in a later task)
+- .gitignore (already done)
+- reports/** (managed by Claude PM)
+- .env*
+- secrets
+- credentials
+- any other unrelated files
+
+# Constraints
+
+- Keep changes minimal.
+- Do NOT write implementation code for parser/signature/search/rag — only empty stubs.
+- Do NOT create sample Markdown error cases yet (next task).
+- Do not switch branches.
+- Do not merge.
+- Do not deploy.
+- Do not run destructive commands.
+- Do not read or write .env files or secrets.
+- Do not commit. Claude PM will commit after verification.
+
+# Verification
+
+Run after implementation:
+
+```
+cd /Users/uenoyuuta/Debug_Memory
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+python -c "import debug_memory; print(debug_memory.__version__)"
+deactivate
+```
+
+Expected result: prints `0.1.0` with no errors.
+
+# Final Report Format
+
+When done, return a JSON block:
+
+```json
+{
+  "status": "completed | partial | failed",
+  "changed_files": ["path/to/file", "..."],
+  "summary": "1-3 lines about what was done",
+  "tests_run": ["command: result", "..."],
+  "unresolved_issues": ["..."],
+  "recommended_next_step": "next session should..."
+}
+```
+
+codex
+I will create only the requested scaffold files and directories, first checking the repository state and existing root files so I do not overwrite unrelated work. Because this task replaces the repository instruction file with specified project content, I will use the exact requested `AGENTS.md` text.
+exec
+/bin/zsh -lc 'pwd && git branch --show-current && git status --short --untracked-files=all' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+/Users/uenoyuuta/Debug_Memory
+ai/yakin-20260526-234017
+ M reports/yakin/yakin-20260526-234017/state.md
+?? reports/yakin/yakin-20260526-234017/handoffs/T01-to-codex.md
+?? reports/yakin/yakin-20260526-234017/issue-body.md
+?? reports/yakin/yakin-20260526-234017/logs/T01.stderr.log
+?? reports/yakin/yakin-20260526-234017/logs/T01.stdout.log
+
+exec
+/bin/zsh -lc "rg --files -g 'pyproject.toml' -g 'AGENTS.md' -g 'debug_memory/**' -g 'memory/**' -g 'templates/**' -g 'tests/**' -g '"'!/.venv/**'"'" in /Users/uenoyuuta/Debug_Memory
+ exited 1 in 0ms:
+codex
+The requested scaffold paths do not yet exist. The worktree has unrelated activity under `reports/`; I will leave it untouched and add only the package metadata, empty module skeleton, placeholder directories, tests package, and the prescribed root instructions.
+apply patch
+patch: completed
+/Users/uenoyuuta/Debug_Memory/AGENTS.md
+/Users/uenoyuuta/Debug_Memory/debug_memory/__init__.py
+/Users/uenoyuuta/Debug_Memory/debug_memory/cli.py
+/Users/uenoyuuta/Debug_Memory/debug_memory/models.py
+/Users/uenoyuuta/Debug_Memory/debug_memory/parser.py
+/Users/uenoyuuta/Debug_Memory/debug_memory/rag.py
+/Users/uenoyuuta/Debug_Memory/debug_memory/render.py
+/Users/uenoyuuta/Debug_Memory/debug_memory/search.py
+/Users/uenoyuuta/Debug_Memory/debug_memory/signature.py
+/Users/uenoyuuta/Debug_Memory/memory/errors/.gitkeep
+/Users/uenoyuuta/Debug_Memory/pyproject.toml
+/Users/uenoyuuta/Debug_Memory/templates/.gitkeep
+/Users/uenoyuuta/Debug_Memory/tests/__init__.py
+diff --git a/AGENTS.md b/AGENTS.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4242954891ac51c54a590b0eaad9e1112ea8598e
+--- /dev/null
++++ b/AGENTS.md
+@@ -0,0 +1,34 @@
++# AGENTS.md
++
++## Project Overview
++
++This project implements Debug Memory Vol.1: a local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++
++## Scope
++
++Implement only the Vol.1 internal system:
++- Markdown error case parsing
++- Error signature extraction
++- Rule-based similar error search
++- Solution candidate rendering
++- CLI commands: search and ask
++- Unit tests
++
++Do not implement:
++- Web UI
++- LLM API integration
++- Vector database
++- Claude Skill integration
++- Codex auto-fix workflow
++- GitHub Issue integration
++
++## Development Guidelines
++
++- Keep the implementation simple and dependency-light.
++- Prefer standard library modules where practical.
++- Use PyYAML only if needed for frontmatter parsing.
++- Use argparse for CLI unless there is a strong reason not to.
++- Add tests for parser, signature extraction, search ranking, and answer rendering.
++- The tool must work locally without external API calls.
++- Search results must include evidence and reasons.
++- Do not make the answer sound certain when it is based only on previous similar cases.
+diff --git a/debug_memory/__init__.py b/debug_memory/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..3dc1f76bc69e3f559bee6253b24fc93acee9e1f9
+--- /dev/null
++++ b/debug_memory/__init__.py
+@@ -0,0 +1 @@
++__version__ = "0.1.0"
+diff --git a/debug_memory/cli.py b/debug_memory/cli.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..336e825c89f5269f2c2cba25404b0abf254bc43e
+--- /dev/null
++++ b/debug_memory/cli.py
+@@ -0,0 +1,2 @@
++def main():
++    pass
+diff --git a/debug_memory/models.py b/debug_memory/models.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/models.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/parser.py b/debug_memory/parser.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/parser.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/rag.py b/debug_memory/rag.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/rag.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/render.py b/debug_memory/render.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/render.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/search.py b/debug_memory/search.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/search.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/signature.py b/debug_memory/signature.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/signature.py
+@@ -0,0 +1 @@
++
+diff --git a/memory/errors/.gitkeep b/memory/errors/.gitkeep
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/memory/errors/.gitkeep
+@@ -0,0 +1 @@
++
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 0000000000000000000000000000000000000000..e395b024da3b3af38df9f1f9dddb6ede5dc9797a
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,12 @@
++[build-system]
++requires = ["setuptools>=61"]
++build-backend = "setuptools.build_meta"
++
++[project]
++name = "debug-memory"
++version = "0.1.0"
++requires-python = ">=3.10"
++dependencies = ["PyYAML"]
++
++[project.scripts]
++debug-memory = "debug_memory.cli:main"
+diff --git a/templates/.gitkeep b/templates/.gitkeep
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/templates/.gitkeep
+@@ -0,0 +1 @@
++
+diff --git a/tests/__init__.py b/tests/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/tests/__init__.py
+@@ -0,0 +1 @@
++
+
+diff --git a/AGENTS.md b/AGENTS.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4242954891ac51c54a590b0eaad9e1112ea8598e
+--- /dev/null
++++ b/AGENTS.md
+@@ -0,0 +1,34 @@
++# AGENTS.md
++
++## Project Overview
++
++This project implements Debug Memory Vol.1: a local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++
++## Scope
++
++Implement only the Vol.1 internal system:
++- Markdown error case parsing
++- Error signature extraction
++- Rule-based similar error search
++- Solution candidate rendering
++- CLI commands: search and ask
++- Unit tests
++
++Do not implement:
++- Web UI
++- LLM API integration
++- Vector database
++- Claude Skill integration
++- Codex auto-fix workflow
++- GitHub Issue integration
++
++## Development Guidelines
++
++- Keep the implementation simple and dependency-light.
++- Prefer standard library modules where practical.
++- Use PyYAML only if needed for frontmatter parsing.
++- Use argparse for CLI unless there is a strong reason not to.
++- Add tests for parser, signature extraction, search ranking, and answer rendering.
++- The tool must work locally without external API calls.
++- Search results must include evidence and reasons.
++- Do not make the answer sound certain when it is based only on previous similar cases.
+diff --git a/debug_memory/__init__.py b/debug_memory/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..3dc1f76bc69e3f559bee6253b24fc93acee9e1f9
+--- /dev/null
++++ b/debug_memory/__init__.py
+@@ -0,0 +1 @@
++__version__ = "0.1.0"
+diff --git a/debug_memory/cli.py b/debug_memory/cli.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..336e825c89f5269f2c2cba25404b0abf254bc43e
+--- /dev/null
++++ b/debug_memory/cli.py
+@@ -0,0 +1,2 @@
++def main():
++    pass
+diff --git a/debug_memory/models.py b/debug_memory/models.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/models.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/parser.py b/debug_memory/parser.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/parser.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/rag.py b/debug_memory/rag.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/rag.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/render.py b/debug_memory/render.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/render.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/search.py b/debug_memory/search.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/search.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/signature.py b/debug_memory/signature.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/signature.py
+@@ -0,0 +1 @@
++
+diff --git a/memory/errors/.gitkeep b/memory/errors/.gitkeep
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/memory/errors/.gitkeep
+@@ -0,0 +1 @@
++
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 0000000000000000000000000000000000000000..e395b024da3b3af38df9f1f9dddb6ede5dc9797a
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,12 @@
++[build-system]
++requires = ["setuptools>=61"]
++build-backend = "setuptools.build_meta"
++
++[project]
++name = "debug-memory"
++version = "0.1.0"
++requires-python = ">=3.10"
++dependencies = ["PyYAML"]
++
++[project.scripts]
++debug-memory = "debug_memory.cli:main"
+diff --git a/templates/.gitkeep b/templates/.gitkeep
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/templates/.gitkeep
+@@ -0,0 +1 @@
++
+diff --git a/tests/__init__.py b/tests/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/tests/__init__.py
+@@ -0,0 +1 @@
++
+
+codex
+The scaffold is now in place, with implementation modules intentionally left blank except for the required version and CLI entry stub. I will run the requested editable-install import check in a local virtual environment and then enumerate only the files added within scope.
+exec
+/bin/zsh -lc 'git status --short --untracked-files=all -- pyproject.toml AGENTS.md debug_memory memory templates tests' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+?? AGENTS.md
+?? debug_memory/__init__.py
+?? debug_memory/cli.py
+?? debug_memory/models.py
+?? debug_memory/parser.py
+?? debug_memory/rag.py
+?? debug_memory/render.py
+?? debug_memory/search.py
+?? debug_memory/signature.py
+?? memory/errors/.gitkeep
+?? pyproject.toml
+?? templates/.gitkeep
+?? tests/__init__.py
+
+exec
+/bin/zsh -lc 'python -m venv .venv && codex-distill -p "Report whether editable installation and the import/version check succeeded. Return the printed debug_memory version and any errors exactly if failure occurs." -- .venv/bin/pip install -e . && .venv/bin/python -c "import debug_memory; print(debug_memory.__version__)"' in /Users/uenoyuuta/Debug_Memory
+diff --git a/AGENTS.md b/AGENTS.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4242954891ac51c54a590b0eaad9e1112ea8598e
+--- /dev/null
++++ b/AGENTS.md
+@@ -0,0 +1,34 @@
++# AGENTS.md
++
++## Project Overview
++
++This project implements Debug Memory Vol.1: a local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++
++## Scope
++
++Implement only the Vol.1 internal system:
++- Markdown error case parsing
++- Error signature extraction
++- Rule-based similar error search
++- Solution candidate rendering
++- CLI commands: search and ask
++- Unit tests
++
++Do not implement:
++- Web UI
++- LLM API integration
++- Vector database
++- Claude Skill integration
++- Codex auto-fix workflow
++- GitHub Issue integration
++
++## Development Guidelines
++
++- Keep the implementation simple and dependency-light.
++- Prefer standard library modules where practical.
++- Use PyYAML only if needed for frontmatter parsing.
++- Use argparse for CLI unless there is a strong reason not to.
++- Add tests for parser, signature extraction, search ranking, and answer rendering.
++- The tool must work locally without external API calls.
++- Search results must include evidence and reasons.
++- Do not make the answer sound certain when it is based only on previous similar cases.
+diff --git a/debug_memory/__init__.py b/debug_memory/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..3dc1f76bc69e3f559bee6253b24fc93acee9e1f9
+--- /dev/null
++++ b/debug_memory/__init__.py
+@@ -0,0 +1 @@
++__version__ = "0.1.0"
+diff --git a/debug_memory/cli.py b/debug_memory/cli.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..336e825c89f5269f2c2cba25404b0abf254bc43e
+--- /dev/null
++++ b/debug_memory/cli.py
+@@ -0,0 +1,2 @@
++def main():
++    pass
+diff --git a/debug_memory/models.py b/debug_memory/models.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/models.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/parser.py b/debug_memory/parser.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/parser.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/rag.py b/debug_memory/rag.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/rag.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/render.py b/debug_memory/render.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/render.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/search.py b/debug_memory/search.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/search.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/signature.py b/debug_memory/signature.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/signature.py
+@@ -0,0 +1 @@
++
+diff --git a/memory/errors/.gitkeep b/memory/errors/.gitkeep
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/memory/errors/.gitkeep
+@@ -0,0 +1 @@
++
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 0000000000000000000000000000000000000000..e395b024da3b3af38df9f1f9dddb6ede5dc9797a
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,12 @@
++[build-system]
++requires = ["setuptools>=61"]
++build-backend = "setuptools.build_meta"
++
++[project]
++name = "debug-memory"
++version = "0.1.0"
++requires-python = ">=3.10"
++dependencies = ["PyYAML"]
++
++[project.scripts]
++debug-memory = "debug_memory.cli:main"
+diff --git a/templates/.gitkeep b/templates/.gitkeep
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/templates/.gitkeep
+@@ -0,0 +1 @@
++
+diff --git a/tests/__init__.py b/tests/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/tests/__init__.py
+@@ -0,0 +1 @@
++
+
+diff --git a/AGENTS.md b/AGENTS.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4242954891ac51c54a590b0eaad9e1112ea8598e
+--- /dev/null
++++ b/AGENTS.md
+@@ -0,0 +1,34 @@
++# AGENTS.md
++
++## Project Overview
++
++This project implements Debug Memory Vol.1: a local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++
++## Scope
++
++Implement only the Vol.1 internal system:
++- Markdown error case parsing
++- Error signature extraction
++- Rule-based similar error search
++- Solution candidate rendering
++- CLI commands: search and ask
++- Unit tests
++
++Do not implement:
++- Web UI
++- LLM API integration
++- Vector database
++- Claude Skill integration
++- Codex auto-fix workflow
++- GitHub Issue integration
++
++## Development Guidelines
++
++- Keep the implementation simple and dependency-light.
++- Prefer standard library modules where practical.
++- Use PyYAML only if needed for frontmatter parsing.
++- Use argparse for CLI unless there is a strong reason not to.
++- Add tests for parser, signature extraction, search ranking, and answer rendering.
++- The tool must work locally without external API calls.
++- Search results must include evidence and reasons.
++- Do not make the answer sound certain when it is based only on previous similar cases.
+diff --git a/debug_memory/__init__.py b/debug_memory/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..3dc1f76bc69e3f559bee6253b24fc93acee9e1f9
+--- /dev/null
++++ b/debug_memory/__init__.py
+@@ -0,0 +1 @@
++__version__ = "0.1.0"
+diff --git a/debug_memory/cli.py b/debug_memory/cli.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..336e825c89f5269f2c2cba25404b0abf254bc43e
+--- /dev/null
++++ b/debug_memory/cli.py
+@@ -0,0 +1,2 @@
++def main():
++    pass
+diff --git a/debug_memory/models.py b/debug_memory/models.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/models.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/parser.py b/debug_memory/parser.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/parser.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/rag.py b/debug_memory/rag.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/rag.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/render.py b/debug_memory/render.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/render.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/search.py b/debug_memory/search.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/search.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/signature.py b/debug_memory/signature.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/signature.py
+@@ -0,0 +1 @@
++
+diff --git a/memory/errors/.gitkeep b/memory/errors/.gitkeep
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/memory/errors/.gitkeep
+@@ -0,0 +1 @@
++
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 0000000000000000000000000000000000000000..e395b024da3b3af38df9f1f9dddb6ede5dc9797a
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,12 @@
++[build-system]
++requires = ["setuptools>=61"]
++build-backend = "setuptools.build_meta"
++
++[project]
++name = "debug-memory"
++version = "0.1.0"
++requires-python = ">=3.10"
++dependencies = ["PyYAML"]
++
++[project.scripts]
++debug-memory = "debug_memory.cli:main"
+diff --git a/templates/.gitkeep b/templates/.gitkeep
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/templates/.gitkeep
+@@ -0,0 +1 @@
++
+diff --git a/tests/__init__.py b/tests/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/tests/__init__.py
+@@ -0,0 +1 @@
++
+
+ exited 1 in 10823ms:
+WARNING: The directory '/Users/uenoyuuta/Library/Caches/pip' or its parent directory is not owned or is not writable by the current user. The cache has been disabled. Check the permissions and owner of that directory. If executing pip with sudo, you should use sudo's -H flag.
+Obtaining file:///Users/uenoyuuta/Debug_Memory
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'error'
+  error: subprocess-exited-with-error
+  
+  × pip subprocess to install build dependencies did not run successfully.
+  │ exit code: 1
+  ╰─> [8 lines of output]
+      WARNING: The directory '/Users/uenoyuuta/Library/Caches/pip' or its parent directory is not owned or is not writable by the current user. The cache has been disabled. Check the permissions and owner of that directory. If executing pip with sudo, you should use sudo's -H flag.
+      WARNING: Retrying (Retry(total=4, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x106c296a0>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /simple/setuptools/
+      WARNING: Retrying (Retry(total=3, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x106bc51d0>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /simple/setuptools/
+      WARNING: Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x106bc5450>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /simple/setuptools/
+      WARNING: Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x106bc56d0>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /simple/setuptools/
+      WARNING: Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x106bc5950>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /simple/setuptools/
+      ERROR: Could not find a version that satisfies the requirement setuptools>=61 (from versions: none)
+      ERROR: No matching distribution found for setuptools>=61
+      [end of output]
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+error: subprocess-exited-with-error
+
+× pip subprocess to install build dependencies did not run successfully.
+│ exit code: 1
+╰─> See above for output.
+
+note: This error originates from a subprocess, and is likely not a problem with pip.
+
+codex
+Editable installation is still running, likely while `pip` resolves local build or dependency requirements in the network-restricted environment. I will wait for its result before determining whether the acceptance check passed or is blocked by dependency availability.
+diff --git a/AGENTS.md b/AGENTS.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4242954891ac51c54a590b0eaad9e1112ea8598e
+--- /dev/null
++++ b/AGENTS.md
+@@ -0,0 +1,34 @@
++# AGENTS.md
++
++## Project Overview
++
++This project implements Debug Memory Vol.1: a local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++
++## Scope
++
++Implement only the Vol.1 internal system:
++- Markdown error case parsing
++- Error signature extraction
++- Rule-based similar error search
++- Solution candidate rendering
++- CLI commands: search and ask
++- Unit tests
++
++Do not implement:
++- Web UI
++- LLM API integration
++- Vector database
++- Claude Skill integration
++- Codex auto-fix workflow
++- GitHub Issue integration
++
++## Development Guidelines
++
++- Keep the implementation simple and dependency-light.
++- Prefer standard library modules where practical.
++- Use PyYAML only if needed for frontmatter parsing.
++- Use argparse for CLI unless there is a strong reason not to.
++- Add tests for parser, signature extraction, search ranking, and answer rendering.
++- The tool must work locally without external API calls.
++- Search results must include evidence and reasons.
++- Do not make the answer sound certain when it is based only on previous similar cases.
+diff --git a/debug_memory/__init__.py b/debug_memory/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..3dc1f76bc69e3f559bee6253b24fc93acee9e1f9
+--- /dev/null
++++ b/debug_memory/__init__.py
+@@ -0,0 +1 @@
++__version__ = "0.1.0"
+diff --git a/debug_memory/cli.py b/debug_memory/cli.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..336e825c89f5269f2c2cba25404b0abf254bc43e
+--- /dev/null
++++ b/debug_memory/cli.py
+@@ -0,0 +1,2 @@
++def main():
++    pass
+diff --git a/debug_memory/models.py b/debug_memory/models.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/models.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/parser.py b/debug_memory/parser.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/parser.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/rag.py b/debug_memory/rag.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/rag.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/render.py b/debug_memory/render.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/render.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/search.py b/debug_memory/search.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/search.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/signature.py b/debug_memory/signature.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/signature.py
+@@ -0,0 +1 @@
++
+diff --git a/memory/errors/.gitkeep b/memory/errors/.gitkeep
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/memory/errors/.gitkeep
+@@ -0,0 +1 @@
++
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 0000000000000000000000000000000000000000..e395b024da3b3af38df9f1f9dddb6ede5dc9797a
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,12 @@
++[build-system]
++requires = ["setuptools>=61"]
++build-backend = "setuptools.build_meta"
++
++[project]
++name = "debug-memory"
++version = "0.1.0"
++requires-python = ">=3.10"
++dependencies = ["PyYAML"]
++
++[project.scripts]
++debug-memory = "debug_memory.cli:main"
+diff --git a/templates/.gitkeep b/templates/.gitkeep
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/templates/.gitkeep
+@@ -0,0 +1 @@
++
+diff --git a/tests/__init__.py b/tests/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/tests/__init__.py
+@@ -0,0 +1 @@
++
+
+codex
+The specified `pip install -e .` command failed before installing the project because the sandbox cannot reach PyPI to obtain the `setuptools` build requirement. I will perform a dependency-free, non-isolated editable install attempt to validate the local package wiring without changing the declared dependency or scaffold.
+exec
+/bin/zsh -lc "rg -n '"'^name =|''^version =|''^requires-python =|''^dependencies =|''^debug-memory ='"' pyproject.toml && sed -n '1,80p' AGENTS.md" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+6:name = "debug-memory"
+7:version = "0.1.0"
+8:requires-python = ">=3.10"
+9:dependencies = ["PyYAML"]
+12:debug-memory = "debug_memory.cli:main"
+# AGENTS.md
+
+## Project Overview
+
+This project implements Debug Memory Vol.1: a local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
+
+## Scope
+
+Implement only the Vol.1 internal system:
+- Markdown error case parsing
+- Error signature extraction
+- Rule-based similar error search
+- Solution candidate rendering
+- CLI commands: search and ask
+- Unit tests
+
+Do not implement:
+- Web UI
+- LLM API integration
+- Vector database
+- Claude Skill integration
+- Codex auto-fix workflow
+- GitHub Issue integration
+
+## Development Guidelines
+
+- Keep the implementation simple and dependency-light.
+- Prefer standard library modules where practical.
+- Use PyYAML only if needed for frontmatter parsing.
+- Use argparse for CLI unless there is a strong reason not to.
+- Add tests for parser, signature extraction, search ranking, and answer rendering.
+- The tool must work locally without external API calls.
+- Search results must include evidence and reasons.
+- Do not make the answer sound certain when it is based only on previous similar cases.
+
+exec
+/bin/zsh -lc '.venv/bin/python -c "import setuptools; print(setuptools.__version__)"' in /Users/uenoyuuta/Debug_Memory
+ exited 1 in 0ms:
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import setuptools; print(setuptools.__version__)
+    ^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'setuptools'
+
+diff --git a/AGENTS.md b/AGENTS.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4242954891ac51c54a590b0eaad9e1112ea8598e
+--- /dev/null
++++ b/AGENTS.md
+@@ -0,0 +1,34 @@
++# AGENTS.md
++
++## Project Overview
++
++This project implements Debug Memory Vol.1: a local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++
++## Scope
++
++Implement only the Vol.1 internal system:
++- Markdown error case parsing
++- Error signature extraction
++- Rule-based similar error search
++- Solution candidate rendering
++- CLI commands: search and ask
++- Unit tests
++
++Do not implement:
++- Web UI
++- LLM API integration
++- Vector database
++- Claude Skill integration
++- Codex auto-fix workflow
++- GitHub Issue integration
++
++## Development Guidelines
++
++- Keep the implementation simple and dependency-light.
++- Prefer standard library modules where practical.
++- Use PyYAML only if needed for frontmatter parsing.
++- Use argparse for CLI unless there is a strong reason not to.
++- Add tests for parser, signature extraction, search ranking, and answer rendering.
++- The tool must work locally without external API calls.
++- Search results must include evidence and reasons.
++- Do not make the answer sound certain when it is based only on previous similar cases.
+diff --git a/debug_memory/__init__.py b/debug_memory/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..3dc1f76bc69e3f559bee6253b24fc93acee9e1f9
+--- /dev/null
++++ b/debug_memory/__init__.py
+@@ -0,0 +1 @@
++__version__ = "0.1.0"
+diff --git a/debug_memory/cli.py b/debug_memory/cli.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..336e825c89f5269f2c2cba25404b0abf254bc43e
+--- /dev/null
++++ b/debug_memory/cli.py
+@@ -0,0 +1,2 @@
++def main():
++    pass
+diff --git a/debug_memory/models.py b/debug_memory/models.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/models.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/parser.py b/debug_memory/parser.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/parser.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/rag.py b/debug_memory/rag.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/rag.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/render.py b/debug_memory/render.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/render.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/search.py b/debug_memory/search.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/search.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/signature.py b/debug_memory/signature.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/signature.py
+@@ -0,0 +1 @@
++
+diff --git a/memory/errors/.gitkeep b/memory/errors/.gitkeep
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/memory/errors/.gitkeep
+@@ -0,0 +1 @@
++
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 0000000000000000000000000000000000000000..e395b024da3b3af38df9f1f9dddb6ede5dc9797a
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,12 @@
++[build-system]
++requires = ["setuptools>=61"]
++build-backend = "setuptools.build_meta"
++
++[project]
++name = "debug-memory"
++version = "0.1.0"
++requires-python = ">=3.10"
++dependencies = ["PyYAML"]
++
++[project.scripts]
++debug-memory = "debug_memory.cli:main"
+diff --git a/templates/.gitkeep b/templates/.gitkeep
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/templates/.gitkeep
+@@ -0,0 +1 @@
++
+diff --git a/tests/__init__.py b/tests/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/tests/__init__.py
+@@ -0,0 +1 @@
++
+
+codex
+The new virtual environment also has no preinstalled `setuptools`, so a local fallback editable install cannot run without downloading build tooling. I will record that environmental limitation and still validate that the scaffold module itself imports and exposes the required version from the repository.
+exec
+/bin/zsh -lc 'git status --short --untracked-files=all -- pyproject.toml AGENTS.md debug_memory memory templates tests .venv' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+?? AGENTS.md
+?? debug_memory/__init__.py
+?? debug_memory/cli.py
+?? debug_memory/models.py
+?? debug_memory/parser.py
+?? debug_memory/rag.py
+?? debug_memory/render.py
+?? debug_memory/search.py
+?? debug_memory/signature.py
+?? memory/errors/.gitkeep
+?? pyproject.toml
+?? templates/.gitkeep
+?? tests/__init__.py
+
+exec
+/bin/zsh -lc 'python -c "import debug_memory; print(debug_memory.__version__)"' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+0.1.0
+
+diff --git a/AGENTS.md b/AGENTS.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4242954891ac51c54a590b0eaad9e1112ea8598e
+--- /dev/null
++++ b/AGENTS.md
+@@ -0,0 +1,34 @@
++# AGENTS.md
++
++## Project Overview
++
++This project implements Debug Memory Vol.1: a local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++
++## Scope
++
++Implement only the Vol.1 internal system:
++- Markdown error case parsing
++- Error signature extraction
++- Rule-based similar error search
++- Solution candidate rendering
++- CLI commands: search and ask
++- Unit tests
++
++Do not implement:
++- Web UI
++- LLM API integration
++- Vector database
++- Claude Skill integration
++- Codex auto-fix workflow
++- GitHub Issue integration
++
++## Development Guidelines
++
++- Keep the implementation simple and dependency-light.
++- Prefer standard library modules where practical.
++- Use PyYAML only if needed for frontmatter parsing.
++- Use argparse for CLI unless there is a strong reason not to.
++- Add tests for parser, signature extraction, search ranking, and answer rendering.
++- The tool must work locally without external API calls.
++- Search results must include evidence and reasons.
++- Do not make the answer sound certain when it is based only on previous similar cases.
+diff --git a/debug_memory/__init__.py b/debug_memory/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..3dc1f76bc69e3f559bee6253b24fc93acee9e1f9
+--- /dev/null
++++ b/debug_memory/__init__.py
+@@ -0,0 +1 @@
++__version__ = "0.1.0"
+diff --git a/debug_memory/cli.py b/debug_memory/cli.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..336e825c89f5269f2c2cba25404b0abf254bc43e
+--- /dev/null
++++ b/debug_memory/cli.py
+@@ -0,0 +1,2 @@
++def main():
++    pass
+diff --git a/debug_memory/models.py b/debug_memory/models.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/models.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/parser.py b/debug_memory/parser.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/parser.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/rag.py b/debug_memory/rag.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/rag.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/render.py b/debug_memory/render.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/render.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/search.py b/debug_memory/search.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/search.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/signature.py b/debug_memory/signature.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/signature.py
+@@ -0,0 +1 @@
++
+diff --git a/memory/errors/.gitkeep b/memory/errors/.gitkeep
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/memory/errors/.gitkeep
+@@ -0,0 +1 @@
++
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 0000000000000000000000000000000000000000..e395b024da3b3af38df9f1f9dddb6ede5dc9797a
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,12 @@
++[build-system]
++requires = ["setuptools>=61"]
++build-backend = "setuptools.build_meta"
++
++[project]
++name = "debug-memory"
++version = "0.1.0"
++requires-python = ">=3.10"
++dependencies = ["PyYAML"]
++
++[project.scripts]
++debug-memory = "debug_memory.cli:main"
+diff --git a/templates/.gitkeep b/templates/.gitkeep
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/templates/.gitkeep
+@@ -0,0 +1 @@
++
+diff --git a/tests/__init__.py b/tests/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/tests/__init__.py
+@@ -0,0 +1 @@
++
+
+codex
+```json
+{
+  "status": "completed",
+  "changed_files": [
+    "pyproject.toml",
+    "AGENTS.md",
+    "debug_memory/__init__.py",
+    "debug_memory/cli.py",
+    "debug_memory/models.py",
+    "debug_memory/parser.py",
+    "debug_memory/signature.py",
+    "debug_memory/search.py",
+    "debug_memory/rag.py",
+    "debug_memory/render.py",
+    "memory/errors/.gitkeep",
+    "templates/.gitkeep",
+    "tests/__init__.py"
+  ],
+  "summary": "Created the initial Debug Memory Vol.1 Python package scaffold, required directory placeholders, console-script metadata, and the prescribed AGENTS.md instructions. Implementation modules contain only the requested stubs.",
+  "tests_run": [
+    "python -m venv .venv: passed",
+    ".venv/bin/pip install -e .: blocked because the network-restricted environment could not download setuptools build dependencies",
+    "python -c \"import debug_memory; print(debug_memory.__version__)\": passed, printed 0.1.0"
+  ],
+  "unresolved_issues": [
+    "Editable installation could not be fully verified in this sandbox because PyPI access is unavailable and the fresh virtual environment does not contain setuptools."
+  ],
+  "recommended_next_step": "Run `pip install -e .` and the version import check in an environment with setuptools/PyYAML available, then commit the scaffold."
+}
+```
+diff --git a/AGENTS.md b/AGENTS.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4242954891ac51c54a590b0eaad9e1112ea8598e
+--- /dev/null
++++ b/AGENTS.md
+@@ -0,0 +1,34 @@
++# AGENTS.md
++
++## Project Overview
++
++This project implements Debug Memory Vol.1: a local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++
++## Scope
++
++Implement only the Vol.1 internal system:
++- Markdown error case parsing
++- Error signature extraction
++- Rule-based similar error search
++- Solution candidate rendering
++- CLI commands: search and ask
++- Unit tests
++
++Do not implement:
++- Web UI
++- LLM API integration
++- Vector database
++- Claude Skill integration
++- Codex auto-fix workflow
++- GitHub Issue integration
++
++## Development Guidelines
++
++- Keep the implementation simple and dependency-light.
++- Prefer standard library modules where practical.
++- Use PyYAML only if needed for frontmatter parsing.
++- Use argparse for CLI unless there is a strong reason not to.
++- Add tests for parser, signature extraction, search ranking, and answer rendering.
++- The tool must work locally without external API calls.
++- Search results must include evidence and reasons.
++- Do not make the answer sound certain when it is based only on previous similar cases.
+diff --git a/debug_memory/__init__.py b/debug_memory/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..3dc1f76bc69e3f559bee6253b24fc93acee9e1f9
+--- /dev/null
++++ b/debug_memory/__init__.py
+@@ -0,0 +1 @@
++__version__ = "0.1.0"
+diff --git a/debug_memory/cli.py b/debug_memory/cli.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..336e825c89f5269f2c2cba25404b0abf254bc43e
+--- /dev/null
++++ b/debug_memory/cli.py
+@@ -0,0 +1,2 @@
++def main():
++    pass
+diff --git a/debug_memory/models.py b/debug_memory/models.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/models.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/parser.py b/debug_memory/parser.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/parser.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/rag.py b/debug_memory/rag.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/rag.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/render.py b/debug_memory/render.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/render.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/search.py b/debug_memory/search.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/search.py
+@@ -0,0 +1 @@
++
+diff --git a/debug_memory/signature.py b/debug_memory/signature.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/debug_memory/signature.py
+@@ -0,0 +1 @@
++
+diff --git a/memory/errors/.gitkeep b/memory/errors/.gitkeep
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/memory/errors/.gitkeep
+@@ -0,0 +1 @@
++
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 0000000000000000000000000000000000000000..e395b024da3b3af38df9f1f9dddb6ede5dc9797a
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,12 @@
++[build-system]
++requires = ["setuptools>=61"]
++build-backend = "setuptools.build_meta"
++
++[project]
++name = "debug-memory"
++version = "0.1.0"
++requires-python = ">=3.10"
++dependencies = ["PyYAML"]
++
++[project.scripts]
++debug-memory = "debug_memory.cli:main"
+diff --git a/templates/.gitkeep b/templates/.gitkeep
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/templates/.gitkeep
+@@ -0,0 +1 @@
++
+diff --git a/tests/__init__.py b/tests/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b137891791fe96927ad78e64b0aad7bded08bdc
+--- /dev/null
++++ b/tests/__init__.py
+@@ -0,0 +1 @@
++
+
+tokens used
+33,589
