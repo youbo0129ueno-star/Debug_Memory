@@ -1,0 +1,2145 @@
+Reading prompt from stdin...
+OpenAI Codex v0.133.0
+--------
+workdir: /Users/uenoyuuta/Debug_Memory
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: medium
+reasoning summaries: none
+session id: 019e64e1-250b-73d0-b57d-6368baba4f46
+--------
+user
+# Role
+
+Fresh Codex implementation worker under Claude Yakin Agent.
+
+# Task
+
+Overwrite `/Users/uenoyuuta/Debug_Memory/README.md` with the comprehensive Vol.1 documentation described below.
+
+# Acceptance Criteria
+
+- [ ] README.md exists with the following sections (in this order):
+  1. Title `# Debug Memory`
+  2. One-paragraph overview (purpose: Markdown-based local CLI for similar-error search)
+  3. `## Vol.1 でできること` — bulleted list of features
+  4. `## Vol.1 でやらないこと` — bulleted list of explicit non-scope (no LLM, no Web UI, no vector DB, no external API)
+  5. `## セットアップ` — venv + `pip install -e .` instructions
+  6. `## 使い方` — sample `python -m debug_memory search` and `ask` commands with expected output snippets
+  7. `## Markdownフォーマット` — frontmatter + required sections (Error/Solution) + optional (Context/Notes) + frontmatter field list
+  8. `## なぜLLMを使わないのか` — short rationale (deterministic, offline, no API cost, traceable)
+  9. `## テスト` — `pytest tests/ -v`
+  10. `## 今後の拡張予定` — future Vol.2+ ideas (LLM integration, Web UI, vector DB, Claude Skill, Codex auto-fix, etc.)
+- [ ] Code samples use proper markdown fenced code blocks
+- [ ] No mojibake; use Japanese where natural
+
+# Allowed Edit Scope
+
+- /Users/uenoyuuta/Debug_Memory/README.md
+
+# Forbidden Edit Scope
+
+- Everything else.
+
+# Verification
+
+```
+wc -l README.md
+head -20 README.md
+```
+
+Expected: README.md is at least 50 lines.
+
+# Final Report Format
+
+```json
+{"status": "completed", "changed_files": ["README.md"], "summary": "...", "tests_run": []}
+```
+
+codex
+`README.md` のみを更新します。まず既存の内容とプロジェクトのコマンド表記を最小限確認し、指定された順序で Vol.1 の説明を書き換えます。
+exec
+/bin/zsh -lc "sed -n '1,200p' README.md" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+# Debug Memory
+
+A local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
+
+> **Vol.1**: Markdown ベースの類似エラー検索 + 解決候補返却の内部システム．LLM・Web UI・ベクトルDB は使用しない．
+
+詳細は実装完了後に追記される．
+
+exec
+/bin/zsh -lc 'rg -n "debug_memory|def (search|ask)|add_parser|argparse|usage|Search|候補|Evidence|理由" pyproject.toml src tests 2>/dev/null' in /Users/uenoyuuta/Debug_Memory
+ exited 2 in 0ms:
+tests/test_signature.py:1:from debug_memory.signature import extract_signature
+tests/test_rag.py:3:from debug_memory.parser import load_error_cases
+tests/test_rag.py:4:from debug_memory.rag import build_answer
+tests/test_rag.py:5:from debug_memory.search import search_similar_cases
+tests/test_rag.py:25:    assert "Evidence:" in answer
+pyproject.toml:12:debug-memory = "debug_memory.cli:main"
+pyproject.toml:15:include = ["debug_memory*"]
+tests/test_search.py:3:from debug_memory.parser import load_error_cases
+tests/test_search.py:4:from debug_memory.search import search_similar_cases
+tests/test_parser.py:5:from debug_memory.parser import load_error_cases, parse_error_case
+
+codex
+既存 README は短い案内のみでした。パッケージはルート直下の `debug_memory` を使う構成なので、Markdown の実際のフィールドと CLI 出力を確認して使用例を合わせます。
+exec
+/bin/zsh -lc "rg --files -g '*.md' -g '"'!README.md'"' -g '"'!AGENTS.md'"' ." in /Users/uenoyuuta/Debug_Memory
+exec
+/bin/zsh -lc 'rg -n "add_parser|ArgumentParser|def main|Evidence:|Reason|Solution|Context|Notes|frontmatter|yaml|case_id|title|tags|environment|error" debug_memory tests examples notes cases 2>/dev/null' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+./reports/yakin/yakin-20260526-234017/handoffs/T03-to-codex.md
+./reports/yakin/yakin-20260526-234017/handoffs/T06-to-codex.md
+./reports/yakin/yakin-20260526-234017/handoffs/T05-to-codex.md
+./reports/yakin/yakin-20260526-234017/handoffs/T10-to-codex.md
+./reports/yakin/yakin-20260526-234017/handoffs/T07-to-codex.md
+./reports/yakin/yakin-20260526-234017/handoffs/T02-to-codex.md
+./reports/yakin/yakin-20260526-234017/handoffs/T01-to-codex.md
+./reports/yakin/yakin-20260526-234017/handoffs/T08-to-codex.md
+./reports/yakin/yakin-20260526-234017/handoffs/T01b-to-codex.md
+./reports/yakin/yakin-20260526-234017/handoffs/T04-to-codex.md
+./reports/yakin/yakin-20260526-234017/state.md
+./reports/yakin/yakin-20260526-234017/issue-body.md
+./reports/yakin/yakin-20260526-234017/codex-reports/T04-report.md
+./reports/yakin/yakin-20260526-234017/codex-reports/T08-report.md
+./reports/yakin/yakin-20260526-234017/codex-reports/T05-report.md
+./reports/yakin/yakin-20260526-234017/codex-reports/T06-report.md
+./reports/yakin/yakin-20260526-234017/codex-reports/T07-report.md
+./templates/error_case.md
+./memory/errors/2026-05-26_fastapi-cors.md
+./memory/errors/2026-05-26_python-dotenv.md
+./memory/errors/2026-05-26_react-undefined-map.md
+
+ exited 2 in 0ms:
+tests/test_rag.py:3:from debug_memory.parser import load_error_cases
+tests/test_rag.py:8:ERRORS_DIR = Path(__file__).parent.parent / "memory" / "errors"
+tests/test_rag.py:13:    return load_error_cases(ERRORS_DIR)
+tests/test_rag.py:25:    assert "Evidence:" in answer
+tests/test_signature.py:16:def test_extracts_react_type_error_and_npm_command() -> None:
+tests/test_signature.py:30:        "TypeError TypeError typeerror\n"
+tests/test_search.py:3:from debug_memory.parser import load_error_cases
+tests/test_search.py:7:ERRORS_DIR = Path(__file__).parent.parent / "memory" / "errors"
+tests/test_search.py:11:    return load_error_cases(ERRORS_DIR)
+debug_memory/signature.py:29:    "error",
+debug_memory/signature.py:60:    """Extract ordered, searchable terms from error or query text."""
+tests/test_parser.py:5:from debug_memory.parser import load_error_cases, parse_error_case
+tests/test_parser.py:8:ERRORS_DIR = Path(__file__).parent.parent / "memory" / "errors"
+tests/test_parser.py:11:def _write_case(tmp_path: Path, body: str, frontmatter: str | None = None) -> Path:
+tests/test_parser.py:12:    metadata = frontmatter or """\
+tests/test_parser.py:14:title: Test error
+tests/test_parser.py:16:tags:
+tests/test_parser.py:25:def test_frontmatter_is_parsed(tmp_path: Path) -> None:
+tests/test_parser.py:28:        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
+tests/test_parser.py:31:    case = parse_error_case(path)
+tests/test_parser.py:34:    assert case.title == "Test error"
+tests/test_parser.py:36:    assert case.tags == ["python", "parsing"]
+tests/test_parser.py:39:def test_error_content_is_extracted_and_preserves_code_fences(tmp_path: Path) -> None:
+tests/test_parser.py:42:        "## Error\n\n```text\nModuleNotFoundError: dotenv\n```\n\n## Solution\n\ninstall it\n",
+tests/test_parser.py:45:    assert parse_error_case(path).error == "```text\nModuleNotFoundError: dotenv\n```"
+tests/test_parser.py:51:        "## Error\n\nbroken\n\n## Solution\n\n```bash\npip install python-dotenv\n```\n",
+tests/test_parser.py:54:    assert parse_error_case(path).solution == "```bash\npip install python-dotenv\n```"
+tests/test_parser.py:60:        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
+tests/test_parser.py:61:        frontmatter="id: err_minimal\ntitle: Minimal\nstatus: open\n",
+tests/test_parser.py:64:    case = parse_error_case(path)
+tests/test_parser.py:68:    assert case.tags == []
+tests/test_parser.py:73:@pytest.mark.parametrize("section", ["Error", "Solution"])
+tests/test_parser.py:74:def test_missing_required_section_raises_value_error(tmp_path: Path, section: str) -> None:
+tests/test_parser.py:75:    included_section = "Solution" if section == "Error" else "Error"
+tests/test_parser.py:79:        parse_error_case(path)
+tests/test_parser.py:82:@pytest.mark.parametrize("field", ["id", "title", "status"])
+tests/test_parser.py:83:def test_missing_required_frontmatter_field_raises_value_error(
+tests/test_parser.py:86:    fields = {"id": "err_test", "title": "Test error", "status": "resolved"}
+tests/test_parser.py:88:    frontmatter = "".join(f"{key}: {value}\n" for key, value in fields.items())
+tests/test_parser.py:91:        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
+tests/test_parser.py:92:        frontmatter=frontmatter,
+tests/test_parser.py:96:        parse_error_case(path)
+tests/test_parser.py:99:def test_all_sample_error_files_parse() -> None:
+tests/test_parser.py:100:    cases = load_error_cases(ERRORS_DIR)
+debug_memory/search.py:32:        case_signature = extract_signature(case.error)
+debug_memory/search.py:57:        tag_matches = _overlap(query_signature.keywords, case.tags)
+debug_memory/render.py:16:                f"[{index}] {result.case.title}",
+debug_memory/render.py:19:                f"    tags: {', '.join(result.case.tags)}",
+debug_memory/rag.py:14:        f"[{index}] {result.case.title}",
+debug_memory/rag.py:28:    """Render cautious, evidence-backed guidance from previous error cases."""
+debug_memory/rag.py:53:                top_candidate.case.title,
+debug_memory/rag.py:55:                "Solution:",
+debug_memory/rag.py:60:            lines.extend(["", "Notes:", top_candidate.case.notes])
+debug_memory/rag.py:61:        lines.extend(["", "Evidence:"])
+debug_memory/models.py:10:    title: str
+debug_memory/models.py:12:    tags: list[str]
+debug_memory/models.py:15:    error: str
+debug_memory/cli.py:7:from .parser import load_error_cases
+debug_memory/cli.py:13:def _add_common_args(parser: argparse.ArgumentParser) -> None:
+debug_memory/cli.py:22:        "--errors-dir",
+debug_memory/cli.py:23:        default="memory/errors",
+debug_memory/cli.py:24:        help="Directory containing Markdown error cases (default: memory/errors).",
+debug_memory/cli.py:28:def _resolve_errors_dir(value: str) -> Path:
+debug_memory/cli.py:35:def main(argv: list[str] | None = None) -> int:
+debug_memory/cli.py:36:    parser = argparse.ArgumentParser(prog="debug-memory")
+debug_memory/cli.py:39:    search_parser = subcommands.add_parser("search", help="List similar error cases.")
+debug_memory/cli.py:42:    ask_parser = subcommands.add_parser("ask", help="Render a solution candidate.")
+debug_memory/cli.py:46:    errors_dir = _resolve_errors_dir(args.errors_dir)
+debug_memory/cli.py:47:    cases = load_error_cases(errors_dir)
+debug_memory/cli.py:49:        print(f"no cases found at {errors_dir}", file=sys.stderr)
+debug_memory/parser.py:7:import yaml
+debug_memory/parser.py:14:    r"^##[ \t]+(Error|Context|Solution|Notes)[ \t]*\n(.*?)(?=^##[ \t]+|\Z)",
+debug_memory/parser.py:17:_REQUIRED_FIELDS = ("id", "title", "status")
+debug_memory/parser.py:18:_REQUIRED_SECTIONS = ("Error", "Solution")
+debug_memory/parser.py:21:def _split_frontmatter(text: str, path: Path) -> tuple[dict[str, Any], str]:
+debug_memory/parser.py:24:        raise ValueError(f"{path}: YAML frontmatter must start with '---'")
+debug_memory/parser.py:33:        raise ValueError(f"{path}: YAML frontmatter is missing closing '---'") from exc
+debug_memory/parser.py:35:    frontmatter_text = "\n".join(lines[1:closing_delimiter])
+debug_memory/parser.py:37:        metadata = yaml.safe_load(frontmatter_text) or {}
+debug_memory/parser.py:38:    except yaml.YAMLError as exc:
+debug_memory/parser.py:39:        raise ValueError(f"{path}: invalid YAML frontmatter: {exc}") from exc
+debug_memory/parser.py:42:        raise ValueError(f"{path}: YAML frontmatter must be a mapping")
+debug_memory/parser.py:59:def parse_error_case(path: Path) -> ErrorCase:
+debug_memory/parser.py:61:    metadata, body = _split_frontmatter(path.read_text(encoding="utf-8"), path)
+debug_memory/parser.py:65:            raise ValueError(f"{path}: required frontmatter field '{field}' is missing")
+debug_memory/parser.py:70:        title=str(metadata["title"]),
+debug_memory/parser.py:72:        tags=list(metadata.get("tags") or []),
+debug_memory/parser.py:75:        error=sections["Error"],
+debug_memory/parser.py:76:        context=sections.get("Context", ""),
+debug_memory/parser.py:77:        solution=sections["Solution"],
+debug_memory/parser.py:78:        notes=sections.get("Notes", ""),
+debug_memory/parser.py:83:def load_error_cases(errors_dir: Path) -> list[ErrorCase]:
+debug_memory/parser.py:84:    """Parse all Markdown troubleshooting notes in an error memory directory."""
+debug_memory/parser.py:85:    return [parse_error_case(path) for path in sorted(errors_dir.glob("*.md"))]
+
+exec
+/bin/zsh -lc "sed -n '1,160p' templates/error_case.md && sed -n '1,100p' memory/errors/2026-05-26_python-dotenv.md" in /Users/uenoyuuta/Debug_Memory
+exec
+/bin/zsh -lc "sed -n '1,140p' debug_memory/cli.py && sed -n '1,140p' debug_memory/render.py && sed -n '1,120p' debug_memory/rag.py" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+---
+id: err_YYYYMMDD_NNN
+title: <短い1行タイトル>
+status: resolved
+tags:
+  - <tag1>
+  - <tag2>
+language: <Python | JavaScript | TypeScript | Go | ...>
+frameworks:
+  - <Framework名>
+created_at: YYYY-MM-DD
+updated_at: YYYY-MM-DD
+---
+
+## Error
+
+```text
+<エラーメッセージそのまま>
+```
+
+## Context
+
+<どういう状況で発生したか>
+
+## Solution
+
+<解決手順>
+
+## Notes
+
+<補足，仮想環境の確認方法，関連リンク等>
+---
+id: err_20260526_001
+title: Pythonでdotenvが読み込めない
+status: resolved
+tags:
+  - python
+  - dotenv
+  - venv
+language: Python
+frameworks:
+  - FastAPI
+created_at: 2026-05-26
+updated_at: 2026-05-26
+---
+
+## Error
+
+```text
+ModuleNotFoundError: No module named 'dotenv'
+```
+
+## Context
+
+venvを作り直したあと、FastAPI起動時に発生。`from dotenv import load_dotenv` の行で落ちる。
+
+## Solution
+
+```bash
+pip install python-dotenv
+```
+
+パッケージ名は `dotenv` ではなく `python-dotenv`。インポート名と pip パッケージ名が違うので注意。
+
+## Notes
+
+仮想環境が違う場合もあるので、`which python` と `pip list` を確認する。VSCode などのIDEで別の venv を指している場合も多い。
+
+ succeeded in 0ms:
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+from .parser import load_error_cases
+from .rag import build_answer
+from .render import render_search_results
+from .search import search_similar_cases
+
+
+def _add_common_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--text", required=True, help="Error message or log to search for.")
+    parser.add_argument(
+        "--top-k",
+        type=int,
+        default=3,
+        help="Maximum number of similar cases to return (default: 3).",
+    )
+    parser.add_argument(
+        "--errors-dir",
+        default="memory/errors",
+        help="Directory containing Markdown error cases (default: memory/errors).",
+    )
+
+
+def _resolve_errors_dir(value: str) -> Path:
+    path = Path(value).expanduser()
+    if not path.is_absolute():
+        path = Path.cwd() / path
+    return path.resolve()
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="debug-memory")
+    subcommands = parser.add_subparsers(dest="command", required=True)
+
+    search_parser = subcommands.add_parser("search", help="List similar error cases.")
+    _add_common_args(search_parser)
+
+    ask_parser = subcommands.add_parser("ask", help="Render a solution candidate.")
+    _add_common_args(ask_parser)
+
+    args = parser.parse_args(argv)
+    errors_dir = _resolve_errors_dir(args.errors_dir)
+    cases = load_error_cases(errors_dir)
+    if not cases:
+        print(f"no cases found at {errors_dir}", file=sys.stderr)
+        return 2
+
+    results = search_similar_cases(args.text, cases, top_k=args.top_k)
+    if args.command == "search":
+        print(render_search_results(results))
+    else:
+        print(build_answer(args.text, results))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+from __future__ import annotations
+
+from .models import SearchResult
+
+
+def render_search_results(results: list[SearchResult]) -> str:
+    """Render ranked matches and the evidence supporting each result."""
+    lines = ["Search Results", "==============", ""]
+    if not results:
+        lines.append("(no matches)")
+        return "\n".join(lines)
+
+    for index, result in enumerate(results, start=1):
+        lines.extend(
+            [
+                f"[{index}] {result.case.title}",
+                f"    score: {result.score:.3f}",
+                f"    status: {result.case.status}",
+                f"    tags: {', '.join(result.case.tags)}",
+                f"    file: {result.case.path}",
+                "    reasons:",
+            ]
+        )
+        if result.reasons:
+            lines.extend(f"    - {reason}" for reason in result.reasons)
+        else:
+            lines.append("    - (none)")
+        lines.append("")
+
+    return "\n".join(lines).rstrip()
+
+
+def render_answer(answer: str) -> str:
+    """Return an already-built answer for callers needing a render hook."""
+    return answer
+from __future__ import annotations
+
+from .models import SearchResult
+
+
+_NO_SOLUTION_SUGGESTION = (
+    "Suggestion: 過去の解決済み事例は見つかりませんでした。"
+    "新しいエラー事例としてMarkdownに記録してください。"
+)
+
+
+def _format_result(result: SearchResult, index: int) -> list[str]:
+    lines = [
+        f"[{index}] {result.case.title}",
+        f"    file: {result.case.path.name}",
+        f"    status: {result.case.status}",
+        f"    score: {result.score:.2f}",
+        "    reasons:",
+    ]
+    if result.reasons:
+        lines.extend(f"    - {reason}" for reason in result.reasons)
+    else:
+        lines.append("    - (none)")
+    return lines
+
+
+def build_answer(query: str, results: list[SearchResult]) -> str:
+    """Render cautious, evidence-backed guidance from previous error cases."""
+    lines = [
+        "Debug Memory Answer",
+        "===================",
+        "",
+        "Input:",
+        query,
+        "",
+    ]
+    count = len(results)
+    suffix = "case" if count == 1 else "cases"
+    lines.extend([f"Found {count} similar {suffix}.", ""])
+
+    candidates = [
+        result
+        for result in results
+        if result.case.status.casefold() == "resolved"
+        and result.case.solution.strip()
+    ]
+
+    if candidates:
+        top_candidate = max(candidates, key=lambda result: result.score)
+        lines.extend(
+            [
+                "Top solution candidate:",
+                top_candidate.case.title,
+                "",
+                "Solution:",
+                top_candidate.case.solution,
+            ]
+        )
+        if top_candidate.case.notes.strip():
+            lines.extend(["", "Notes:", top_candidate.case.notes])
+        lines.extend(["", "Evidence:"])
+        for index, result in enumerate(results, start=1):
+            lines.extend(_format_result(result, index))
+        return "\n".join(lines)
+
+    lines.extend(
+        [
+            "No resolved solution candidate found.",
+            "",
+            "Similar unresolved cases:",
+        ]
+    )
+    if results:
+        for index, result in enumerate(results, start=1):
+            lines.extend(_format_result(result, index))
+    else:
+        lines.append("(none)")
+    lines.extend(["", _NO_SOLUTION_SUGGESTION])
+    return "\n".join(lines)
+
+codex
+README には実装済みの `--text` / `--top-k` 引数、`Evidence:` を含む慎重な回答形式、テンプレートにある frontmatter を反映します。指定外ファイルは変更しません。
+apply patch
+patch: completed
+/Users/uenoyuuta/Debug_Memory/README.md
+diff --git a/README.md b/README.md
+index 78e699b95415f849599999f6427f5da82e733318..e56ebf178234f186f1d8fa6fcf0f5fe9ade85858
+--- a/README.md
++++ b/README.md
+@@ -1,7 +1,153 @@
+ # Debug Memory
+ 
+-A local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++Debug Memory は、ソフトウェア開発中に遭遇したエラー事例を Markdown ファイルとしてローカルに蓄積し、入力したエラーメッセージに似た過去事例と解決候補を検索する CLI ツールです。Vol.1 は外部サービスに依存せず、再現可能なルールベースの検索によって、過去の記録を根拠付きで再利用できるようにします。
++
++## Vol.1 でできること
++
++- Markdown 形式で保存されたトラブルシューティング事例の読み込み
++- エラー文や問い合わせ文から検索用シグネチャの抽出
++- キーワード、タグなどに基づく類似エラー事例のランキング表示
++- 一致理由、スコア、参照ファイルを含む検索結果の表示
++- 解決済みの類似事例に基づく、断定を避けた解決候補の提示
++- `search` と `ask` のローカル CLI コマンドの実行
++
++## Vol.1 でやらないこと
++
++- LLM を使った推論、回答生成、要約
++- Web UI の提供
++- ベクトルデータベースや埋め込み検索の導入
++- 外部 API やクラウドサービスへの接続
++
++## セットアップ
++
++Python の仮想環境を作成し、プロジェクトを editable install します。
++
++```bash
++python -m venv .venv
++source .venv/bin/activate
++python -m pip install -e .
++```
++
++Windows PowerShell の場合は、仮想環境の有効化に次のコマンドを使用します。
++
++```powershell
++.\.venv\Scripts\Activate.ps1
++python -m pip install -e .
++```
++
++## 使い方
++
++`search` は `memory/errors` 内の過去事例から類似するエラーを検索し、根拠とともにランキング表示します。
++
++```bash
++python -m debug_memory search --text "ModuleNotFoundError: No module named 'dotenv'" --top-k 3
++```
++
++出力例:
++
++```text
++Search Results
++==============
++
++[1] Pythonでdotenvが読み込めない
++    score: 1.000
++    status: resolved
++    tags: python, dotenv, venv
++    reasons:
++    - ...
++```
++
++`ask` は類似事例から解決済みの候補を選び、元になった事例を証拠として添えて提示します。過去事例に基づく候補であり、現在の問題への確実な解決を保証するものではありません。
++
++```bash
++python -m debug_memory ask --text "ModuleNotFoundError: No module named 'dotenv'"
++```
++
++出力例:
++
++```text
++Debug Memory Answer
++===================
++
++Top solution candidate:
++Pythonでdotenvが読み込めない
++
++Solution:
++pip install python-dotenv
++
++Evidence:
++[1] Pythonでdotenvが読み込めない
++    status: resolved
++```
++
++既定以外の事例ディレクトリを検索する場合は、いずれのコマンドでも `--errors-dir path/to/errors` を指定できます。
++
++## Markdownフォーマット
++
++エラー事例は、YAML frontmatter と Markdown のセクションで構成します。`## Error` と `## Solution` は必須で、`## Context` と `## Notes` は任意です。
++
++```markdown
++---
++id: err_20260526_001
++title: Pythonでdotenvが読み込めない
++status: resolved
++tags:
++  - python
++  - dotenv
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++ModuleNotFoundError: No module named 'dotenv'
++```
++
++## Context
++
++FastAPI 起動時に import で失敗した。
++
++## Solution
++
++```bash
++pip install python-dotenv
++```
++
++## Notes
++
++使用中の仮想環境も確認する。
++```
++
++frontmatter のフィールド:
++
++- `id` (必須): 事例を一意に識別する ID
++- `title` (必須): 検索結果に表示する短いタイトル
++- `status` (必須): `resolved` など、事例の解決状態
++- `tags` (任意): 検索の照合に使用できるタグのリスト
++- `language` (任意): 関連するプログラミング言語
++- `frameworks` (任意): 関連するフレームワークのリスト
++- `created_at` (任意): 事例の作成日
++- `updated_at` (任意): 事例の更新日
++
++## なぜLLMを使わないのか
+ 
+-> **Vol.1**: Markdown ベースの類似エラー検索 + 解決候補返却の内部システム．LLM・Web UI・ベクトルDB は使用しない．
++Vol.1 は、同じ入力に対して追跡しやすい結果を返す決定的な仕組みを優先します。完全にオフラインで動作するため API コストや通信要件がなく、どの Markdown 事例と一致理由が解決候補の根拠になったかを確認できます。
++
++## テスト
+ 
+-詳細は実装完了後に追記される．
++```bash
++pytest tests/ -v
++```
++
++## 今後の拡張予定
++
++- LLM を利用した解決候補の整理や説明の補助
++- Web UI による検索、閲覧、事例登録
++- ベクトルデータベースを用いた意味的な類似検索
++- Claude Skill との連携
++- Codex による auto-fix ワークフローとの連携
++- GitHub Issue や開発記録との連携
+
+diff --git a/README.md b/README.md
+index 78e699b95415f849599999f6427f5da82e733318..e56ebf178234f186f1d8fa6fcf0f5fe9ade85858
+--- a/README.md
++++ b/README.md
+@@ -1,7 +1,153 @@
+ # Debug Memory
+ 
+-A local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++Debug Memory は、ソフトウェア開発中に遭遇したエラー事例を Markdown ファイルとしてローカルに蓄積し、入力したエラーメッセージに似た過去事例と解決候補を検索する CLI ツールです。Vol.1 は外部サービスに依存せず、再現可能なルールベースの検索によって、過去の記録を根拠付きで再利用できるようにします。
++
++## Vol.1 でできること
++
++- Markdown 形式で保存されたトラブルシューティング事例の読み込み
++- エラー文や問い合わせ文から検索用シグネチャの抽出
++- キーワード、タグなどに基づく類似エラー事例のランキング表示
++- 一致理由、スコア、参照ファイルを含む検索結果の表示
++- 解決済みの類似事例に基づく、断定を避けた解決候補の提示
++- `search` と `ask` のローカル CLI コマンドの実行
++
++## Vol.1 でやらないこと
++
++- LLM を使った推論、回答生成、要約
++- Web UI の提供
++- ベクトルデータベースや埋め込み検索の導入
++- 外部 API やクラウドサービスへの接続
++
++## セットアップ
++
++Python の仮想環境を作成し、プロジェクトを editable install します。
++
++```bash
++python -m venv .venv
++source .venv/bin/activate
++python -m pip install -e .
++```
++
++Windows PowerShell の場合は、仮想環境の有効化に次のコマンドを使用します。
++
++```powershell
++.\.venv\Scripts\Activate.ps1
++python -m pip install -e .
++```
++
++## 使い方
++
++`search` は `memory/errors` 内の過去事例から類似するエラーを検索し、根拠とともにランキング表示します。
++
++```bash
++python -m debug_memory search --text "ModuleNotFoundError: No module named 'dotenv'" --top-k 3
++```
++
++出力例:
++
++```text
++Search Results
++==============
++
++[1] Pythonでdotenvが読み込めない
++    score: 1.000
++    status: resolved
++    tags: python, dotenv, venv
++    reasons:
++    - ...
++```
++
++`ask` は類似事例から解決済みの候補を選び、元になった事例を証拠として添えて提示します。過去事例に基づく候補であり、現在の問題への確実な解決を保証するものではありません。
++
++```bash
++python -m debug_memory ask --text "ModuleNotFoundError: No module named 'dotenv'"
++```
++
++出力例:
++
++```text
++Debug Memory Answer
++===================
++
++Top solution candidate:
++Pythonでdotenvが読み込めない
++
++Solution:
++pip install python-dotenv
++
++Evidence:
++[1] Pythonでdotenvが読み込めない
++    status: resolved
++```
++
++既定以外の事例ディレクトリを検索する場合は、いずれのコマンドでも `--errors-dir path/to/errors` を指定できます。
++
++## Markdownフォーマット
++
++エラー事例は、YAML frontmatter と Markdown のセクションで構成します。`## Error` と `## Solution` は必須で、`## Context` と `## Notes` は任意です。
++
++```markdown
++---
++id: err_20260526_001
++title: Pythonでdotenvが読み込めない
++status: resolved
++tags:
++  - python
++  - dotenv
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++ModuleNotFoundError: No module named 'dotenv'
++```
++
++## Context
++
++FastAPI 起動時に import で失敗した。
++
++## Solution
++
++```bash
++pip install python-dotenv
++```
++
++## Notes
++
++使用中の仮想環境も確認する。
++```
++
++frontmatter のフィールド:
++
++- `id` (必須): 事例を一意に識別する ID
++- `title` (必須): 検索結果に表示する短いタイトル
++- `status` (必須): `resolved` など、事例の解決状態
++- `tags` (任意): 検索の照合に使用できるタグのリスト
++- `language` (任意): 関連するプログラミング言語
++- `frameworks` (任意): 関連するフレームワークのリスト
++- `created_at` (任意): 事例の作成日
++- `updated_at` (任意): 事例の更新日
++
++## なぜLLMを使わないのか
+ 
+-> **Vol.1**: Markdown ベースの類似エラー検索 + 解決候補返却の内部システム．LLM・Web UI・ベクトルDB は使用しない．
++Vol.1 は、同じ入力に対して追跡しやすい結果を返す決定的な仕組みを優先します。完全にオフラインで動作するため API コストや通信要件がなく、どの Markdown 事例と一致理由が解決候補の根拠になったかを確認できます。
++
++## テスト
+ 
+-詳細は実装完了後に追記される．
++```bash
++pytest tests/ -v
++```
++
++## 今後の拡張予定
++
++- LLM を利用した解決候補の整理や説明の補助
++- Web UI による検索、閲覧、事例登録
++- ベクトルデータベースを用いた意味的な類似検索
++- Claude Skill との連携
++- Codex による auto-fix ワークフローとの連携
++- GitHub Issue や開発記録との連携
+
+codex
+本文の書き換えは完了しました。Markdown 事例全体の例に内側のコードフェンスが含まれるため、README 自体のフェンスが崩れないよう外側を 4 バッククォートに調整してから検証します。
+apply patch
+patch: completed
+/Users/uenoyuuta/Debug_Memory/README.md
+diff --git a/README.md b/README.md
+index 78e699b95415f849599999f6427f5da82e733318..4402ead0a80ca5851b14ab747616f6c5b33a4ed8
+--- a/README.md
++++ b/README.md
+@@ -1,7 +1,153 @@
+ # Debug Memory
+ 
+-A local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++Debug Memory は、ソフトウェア開発中に遭遇したエラー事例を Markdown ファイルとしてローカルに蓄積し、入力したエラーメッセージに似た過去事例と解決候補を検索する CLI ツールです。Vol.1 は外部サービスに依存せず、再現可能なルールベースの検索によって、過去の記録を根拠付きで再利用できるようにします。
++
++## Vol.1 でできること
++
++- Markdown 形式で保存されたトラブルシューティング事例の読み込み
++- エラー文や問い合わせ文から検索用シグネチャの抽出
++- キーワード、タグなどに基づく類似エラー事例のランキング表示
++- 一致理由、スコア、参照ファイルを含む検索結果の表示
++- 解決済みの類似事例に基づく、断定を避けた解決候補の提示
++- `search` と `ask` のローカル CLI コマンドの実行
++
++## Vol.1 でやらないこと
++
++- LLM を使った推論、回答生成、要約
++- Web UI の提供
++- ベクトルデータベースや埋め込み検索の導入
++- 外部 API やクラウドサービスへの接続
++
++## セットアップ
++
++Python の仮想環境を作成し、プロジェクトを editable install します。
++
++```bash
++python -m venv .venv
++source .venv/bin/activate
++python -m pip install -e .
++```
++
++Windows PowerShell の場合は、仮想環境の有効化に次のコマンドを使用します。
++
++```powershell
++.\.venv\Scripts\Activate.ps1
++python -m pip install -e .
++```
++
++## 使い方
++
++`search` は `memory/errors` 内の過去事例から類似するエラーを検索し、根拠とともにランキング表示します。
++
++```bash
++python -m debug_memory search --text "ModuleNotFoundError: No module named 'dotenv'" --top-k 3
++```
++
++出力例:
++
++```text
++Search Results
++==============
++
++[1] Pythonでdotenvが読み込めない
++    score: 1.000
++    status: resolved
++    tags: python, dotenv, venv
++    reasons:
++    - ...
++```
++
++`ask` は類似事例から解決済みの候補を選び、元になった事例を証拠として添えて提示します。過去事例に基づく候補であり、現在の問題への確実な解決を保証するものではありません。
++
++```bash
++python -m debug_memory ask --text "ModuleNotFoundError: No module named 'dotenv'"
++```
++
++出力例:
++
++```text
++Debug Memory Answer
++===================
++
++Top solution candidate:
++Pythonでdotenvが読み込めない
++
++Solution:
++pip install python-dotenv
++
++Evidence:
++[1] Pythonでdotenvが読み込めない
++    status: resolved
++```
++
++既定以外の事例ディレクトリを検索する場合は、いずれのコマンドでも `--errors-dir path/to/errors` を指定できます。
++
++## Markdownフォーマット
++
++エラー事例は、YAML frontmatter と Markdown のセクションで構成します。`## Error` と `## Solution` は必須で、`## Context` と `## Notes` は任意です。
++
++````markdown
++---
++id: err_20260526_001
++title: Pythonでdotenvが読み込めない
++status: resolved
++tags:
++  - python
++  - dotenv
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++ModuleNotFoundError: No module named 'dotenv'
++````
++
++## Context
++
++FastAPI 起動時に import で失敗した。
++
++## Solution
++
++```bash
++pip install python-dotenv
++```
++
++## Notes
++
++使用中の仮想環境も確認する。
++```
++
++frontmatter のフィールド:
++
++- `id` (必須): 事例を一意に識別する ID
++- `title` (必須): 検索結果に表示する短いタイトル
++- `status` (必須): `resolved` など、事例の解決状態
++- `tags` (任意): 検索の照合に使用できるタグのリスト
++- `language` (任意): 関連するプログラミング言語
++- `frameworks` (任意): 関連するフレームワークのリスト
++- `created_at` (任意): 事例の作成日
++- `updated_at` (任意): 事例の更新日
++
++## なぜLLMを使わないのか
+ 
+-> **Vol.1**: Markdown ベースの類似エラー検索 + 解決候補返却の内部システム．LLM・Web UI・ベクトルDB は使用しない．
++Vol.1 は、同じ入力に対して追跡しやすい結果を返す決定的な仕組みを優先します。完全にオフラインで動作するため API コストや通信要件がなく、どの Markdown 事例と一致理由が解決候補の根拠になったかを確認できます。
++
++## テスト
+ 
+-詳細は実装完了後に追記される．
++```bash
++pytest tests/ -v
++```
++
++## 今後の拡張予定
++
++- LLM を利用した解決候補の整理や説明の補助
++- Web UI による検索、閲覧、事例登録
++- ベクトルデータベースを用いた意味的な類似検索
++- Claude Skill との連携
++- Codex による auto-fix ワークフローとの連携
++- GitHub Issue や開発記録との連携
+
+diff --git a/README.md b/README.md
+index 78e699b95415f849599999f6427f5da82e733318..4402ead0a80ca5851b14ab747616f6c5b33a4ed8
+--- a/README.md
++++ b/README.md
+@@ -1,7 +1,153 @@
+ # Debug Memory
+ 
+-A local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++Debug Memory は、ソフトウェア開発中に遭遇したエラー事例を Markdown ファイルとしてローカルに蓄積し、入力したエラーメッセージに似た過去事例と解決候補を検索する CLI ツールです。Vol.1 は外部サービスに依存せず、再現可能なルールベースの検索によって、過去の記録を根拠付きで再利用できるようにします。
++
++## Vol.1 でできること
++
++- Markdown 形式で保存されたトラブルシューティング事例の読み込み
++- エラー文や問い合わせ文から検索用シグネチャの抽出
++- キーワード、タグなどに基づく類似エラー事例のランキング表示
++- 一致理由、スコア、参照ファイルを含む検索結果の表示
++- 解決済みの類似事例に基づく、断定を避けた解決候補の提示
++- `search` と `ask` のローカル CLI コマンドの実行
++
++## Vol.1 でやらないこと
++
++- LLM を使った推論、回答生成、要約
++- Web UI の提供
++- ベクトルデータベースや埋め込み検索の導入
++- 外部 API やクラウドサービスへの接続
++
++## セットアップ
++
++Python の仮想環境を作成し、プロジェクトを editable install します。
++
++```bash
++python -m venv .venv
++source .venv/bin/activate
++python -m pip install -e .
++```
++
++Windows PowerShell の場合は、仮想環境の有効化に次のコマンドを使用します。
++
++```powershell
++.\.venv\Scripts\Activate.ps1
++python -m pip install -e .
++```
++
++## 使い方
++
++`search` は `memory/errors` 内の過去事例から類似するエラーを検索し、根拠とともにランキング表示します。
++
++```bash
++python -m debug_memory search --text "ModuleNotFoundError: No module named 'dotenv'" --top-k 3
++```
++
++出力例:
++
++```text
++Search Results
++==============
++
++[1] Pythonでdotenvが読み込めない
++    score: 1.000
++    status: resolved
++    tags: python, dotenv, venv
++    reasons:
++    - ...
++```
++
++`ask` は類似事例から解決済みの候補を選び、元になった事例を証拠として添えて提示します。過去事例に基づく候補であり、現在の問題への確実な解決を保証するものではありません。
++
++```bash
++python -m debug_memory ask --text "ModuleNotFoundError: No module named 'dotenv'"
++```
++
++出力例:
++
++```text
++Debug Memory Answer
++===================
++
++Top solution candidate:
++Pythonでdotenvが読み込めない
++
++Solution:
++pip install python-dotenv
++
++Evidence:
++[1] Pythonでdotenvが読み込めない
++    status: resolved
++```
++
++既定以外の事例ディレクトリを検索する場合は、いずれのコマンドでも `--errors-dir path/to/errors` を指定できます。
++
++## Markdownフォーマット
++
++エラー事例は、YAML frontmatter と Markdown のセクションで構成します。`## Error` と `## Solution` は必須で、`## Context` と `## Notes` は任意です。
++
++````markdown
++---
++id: err_20260526_001
++title: Pythonでdotenvが読み込めない
++status: resolved
++tags:
++  - python
++  - dotenv
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++ModuleNotFoundError: No module named 'dotenv'
++````
++
++## Context
++
++FastAPI 起動時に import で失敗した。
++
++## Solution
++
++```bash
++pip install python-dotenv
++```
++
++## Notes
++
++使用中の仮想環境も確認する。
++```
++
++frontmatter のフィールド:
++
++- `id` (必須): 事例を一意に識別する ID
++- `title` (必須): 検索結果に表示する短いタイトル
++- `status` (必須): `resolved` など、事例の解決状態
++- `tags` (任意): 検索の照合に使用できるタグのリスト
++- `language` (任意): 関連するプログラミング言語
++- `frameworks` (任意): 関連するフレームワークのリスト
++- `created_at` (任意): 事例の作成日
++- `updated_at` (任意): 事例の更新日
++
++## なぜLLMを使わないのか
+ 
+-> **Vol.1**: Markdown ベースの類似エラー検索 + 解決候補返却の内部システム．LLM・Web UI・ベクトルDB は使用しない．
++Vol.1 は、同じ入力に対して追跡しやすい結果を返す決定的な仕組みを優先します。完全にオフラインで動作するため API コストや通信要件がなく、どの Markdown 事例と一致理由が解決候補の根拠になったかを確認できます。
++
++## テスト
+ 
+-詳細は実装完了後に追記される．
++```bash
++pytest tests/ -v
++```
++
++## 今後の拡張予定
++
++- LLM を利用した解決候補の整理や説明の補助
++- Web UI による検索、閲覧、事例登録
++- ベクトルデータベースを用いた意味的な類似検索
++- Claude Skill との連携
++- Codex による auto-fix ワークフローとの連携
++- GitHub Issue や開発記録との連携
+
+exec
+/bin/zsh -lc "sed -n '78,140p' README.md" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+Evidence:
+[1] Pythonでdotenvが読み込めない
+    status: resolved
+```
+
+既定以外の事例ディレクトリを検索する場合は、いずれのコマンドでも `--errors-dir path/to/errors` を指定できます。
+
+## Markdownフォーマット
+
+エラー事例は、YAML frontmatter と Markdown のセクションで構成します。`## Error` と `## Solution` は必須で、`## Context` と `## Notes` は任意です。
+
+````markdown
+---
+id: err_20260526_001
+title: Pythonでdotenvが読み込めない
+status: resolved
+tags:
+  - python
+  - dotenv
+language: Python
+frameworks:
+  - FastAPI
+created_at: 2026-05-26
+updated_at: 2026-05-26
+---
+
+## Error
+
+```text
+ModuleNotFoundError: No module named 'dotenv'
+````
+
+## Context
+
+FastAPI 起動時に import で失敗した。
+
+## Solution
+
+```bash
+pip install python-dotenv
+```
+
+## Notes
+
+使用中の仮想環境も確認する。
+```
+
+frontmatter のフィールド:
+
+- `id` (必須): 事例を一意に識別する ID
+- `title` (必須): 検索結果に表示する短いタイトル
+- `status` (必須): `resolved` など、事例の解決状態
+- `tags` (任意): 検索の照合に使用できるタグのリスト
+- `language` (任意): 関連するプログラミング言語
+- `frameworks` (任意): 関連するフレームワークのリスト
+- `created_at` (任意): 事例の作成日
+- `updated_at` (任意): 事例の更新日
+
+## なぜLLMを使わないのか
+
+Vol.1 は、同じ入力に対して追跡しやすい結果を返す決定的な仕組みを優先します。完全にオフラインで動作するため API コストや通信要件がなく、どの Markdown 事例と一致理由が解決候補の根拠になったかを確認できます。
+
+## テスト
+
+exec
+/bin/zsh -lc 'wc -l README.md && head -20 README.md' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+     153 README.md
+# Debug Memory
+
+Debug Memory は、ソフトウェア開発中に遭遇したエラー事例を Markdown ファイルとしてローカルに蓄積し、入力したエラーメッセージに似た過去事例と解決候補を検索する CLI ツールです。Vol.1 は外部サービスに依存せず、再現可能なルールベースの検索によって、過去の記録を根拠付きで再利用できるようにします。
+
+## Vol.1 でできること
+
+- Markdown 形式で保存されたトラブルシューティング事例の読み込み
+- エラー文や問い合わせ文から検索用シグネチャの抽出
+- キーワード、タグなどに基づく類似エラー事例のランキング表示
+- 一致理由、スコア、参照ファイルを含む検索結果の表示
+- 解決済みの類似事例に基づく、断定を避けた解決候補の提示
+- `search` と `ask` のローカル CLI コマンドの実行
+
+## Vol.1 でやらないこと
+
+- LLM を使った推論、回答生成、要約
+- Web UI の提供
+- ベクトルデータベースや埋め込み検索の導入
+- 外部 API やクラウドサービスへの接続
+
+
+diff --git a/README.md b/README.md
+index 78e699b95415f849599999f6427f5da82e733318..4402ead0a80ca5851b14ab747616f6c5b33a4ed8
+--- a/README.md
++++ b/README.md
+@@ -1,7 +1,153 @@
+ # Debug Memory
+ 
+-A local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++Debug Memory は、ソフトウェア開発中に遭遇したエラー事例を Markdown ファイルとしてローカルに蓄積し、入力したエラーメッセージに似た過去事例と解決候補を検索する CLI ツールです。Vol.1 は外部サービスに依存せず、再現可能なルールベースの検索によって、過去の記録を根拠付きで再利用できるようにします。
++
++## Vol.1 でできること
++
++- Markdown 形式で保存されたトラブルシューティング事例の読み込み
++- エラー文や問い合わせ文から検索用シグネチャの抽出
++- キーワード、タグなどに基づく類似エラー事例のランキング表示
++- 一致理由、スコア、参照ファイルを含む検索結果の表示
++- 解決済みの類似事例に基づく、断定を避けた解決候補の提示
++- `search` と `ask` のローカル CLI コマンドの実行
++
++## Vol.1 でやらないこと
++
++- LLM を使った推論、回答生成、要約
++- Web UI の提供
++- ベクトルデータベースや埋め込み検索の導入
++- 外部 API やクラウドサービスへの接続
++
++## セットアップ
++
++Python の仮想環境を作成し、プロジェクトを editable install します。
++
++```bash
++python -m venv .venv
++source .venv/bin/activate
++python -m pip install -e .
++```
++
++Windows PowerShell の場合は、仮想環境の有効化に次のコマンドを使用します。
++
++```powershell
++.\.venv\Scripts\Activate.ps1
++python -m pip install -e .
++```
++
++## 使い方
++
++`search` は `memory/errors` 内の過去事例から類似するエラーを検索し、根拠とともにランキング表示します。
++
++```bash
++python -m debug_memory search --text "ModuleNotFoundError: No module named 'dotenv'" --top-k 3
++```
++
++出力例:
++
++```text
++Search Results
++==============
++
++[1] Pythonでdotenvが読み込めない
++    score: 1.000
++    status: resolved
++    tags: python, dotenv, venv
++    reasons:
++    - ...
++```
++
++`ask` は類似事例から解決済みの候補を選び、元になった事例を証拠として添えて提示します。過去事例に基づく候補であり、現在の問題への確実な解決を保証するものではありません。
++
++```bash
++python -m debug_memory ask --text "ModuleNotFoundError: No module named 'dotenv'"
++```
++
++出力例:
++
++```text
++Debug Memory Answer
++===================
++
++Top solution candidate:
++Pythonでdotenvが読み込めない
++
++Solution:
++pip install python-dotenv
++
++Evidence:
++[1] Pythonでdotenvが読み込めない
++    status: resolved
++```
++
++既定以外の事例ディレクトリを検索する場合は、いずれのコマンドでも `--errors-dir path/to/errors` を指定できます。
++
++## Markdownフォーマット
++
++エラー事例は、YAML frontmatter と Markdown のセクションで構成します。`## Error` と `## Solution` は必須で、`## Context` と `## Notes` は任意です。
++
++````markdown
++---
++id: err_20260526_001
++title: Pythonでdotenvが読み込めない
++status: resolved
++tags:
++  - python
++  - dotenv
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++ModuleNotFoundError: No module named 'dotenv'
++````
++
++## Context
++
++FastAPI 起動時に import で失敗した。
++
++## Solution
++
++```bash
++pip install python-dotenv
++```
++
++## Notes
++
++使用中の仮想環境も確認する。
++```
++
++frontmatter のフィールド:
++
++- `id` (必須): 事例を一意に識別する ID
++- `title` (必須): 検索結果に表示する短いタイトル
++- `status` (必須): `resolved` など、事例の解決状態
++- `tags` (任意): 検索の照合に使用できるタグのリスト
++- `language` (任意): 関連するプログラミング言語
++- `frameworks` (任意): 関連するフレームワークのリスト
++- `created_at` (任意): 事例の作成日
++- `updated_at` (任意): 事例の更新日
++
++## なぜLLMを使わないのか
+ 
+-> **Vol.1**: Markdown ベースの類似エラー検索 + 解決候補返却の内部システム．LLM・Web UI・ベクトルDB は使用しない．
++Vol.1 は、同じ入力に対して追跡しやすい結果を返す決定的な仕組みを優先します。完全にオフラインで動作するため API コストや通信要件がなく、どの Markdown 事例と一致理由が解決候補の根拠になったかを確認できます。
++
++## テスト
+ 
+-詳細は実装完了後に追記される．
++```bash
++pytest tests/ -v
++```
++
++## 今後の拡張予定
++
++- LLM を利用した解決候補の整理や説明の補助
++- Web UI による検索、閲覧、事例登録
++- ベクトルデータベースを用いた意味的な類似検索
++- Claude Skill との連携
++- Codex による auto-fix ワークフローとの連携
++- GitHub Issue や開発記録との連携
+
+codex
+検証で、Markdown フォーマット例の内側と外側の終了フェンスが逆になっていることを確認しました。その 2 箇所だけを修正し、もう一度指定の確認を実行します。
+apply patch
+patch: completed
+/Users/uenoyuuta/Debug_Memory/README.md
+diff --git a/README.md b/README.md
+index 78e699b95415f849599999f6427f5da82e733318..035a70c5d8dd7f6d80ce8c275eb96aa93e3d0f77
+--- a/README.md
++++ b/README.md
+@@ -1,7 +1,153 @@
+ # Debug Memory
+ 
+-A local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++Debug Memory は、ソフトウェア開発中に遭遇したエラー事例を Markdown ファイルとしてローカルに蓄積し、入力したエラーメッセージに似た過去事例と解決候補を検索する CLI ツールです。Vol.1 は外部サービスに依存せず、再現可能なルールベースの検索によって、過去の記録を根拠付きで再利用できるようにします。
++
++## Vol.1 でできること
++
++- Markdown 形式で保存されたトラブルシューティング事例の読み込み
++- エラー文や問い合わせ文から検索用シグネチャの抽出
++- キーワード、タグなどに基づく類似エラー事例のランキング表示
++- 一致理由、スコア、参照ファイルを含む検索結果の表示
++- 解決済みの類似事例に基づく、断定を避けた解決候補の提示
++- `search` と `ask` のローカル CLI コマンドの実行
++
++## Vol.1 でやらないこと
++
++- LLM を使った推論、回答生成、要約
++- Web UI の提供
++- ベクトルデータベースや埋め込み検索の導入
++- 外部 API やクラウドサービスへの接続
++
++## セットアップ
++
++Python の仮想環境を作成し、プロジェクトを editable install します。
++
++```bash
++python -m venv .venv
++source .venv/bin/activate
++python -m pip install -e .
++```
++
++Windows PowerShell の場合は、仮想環境の有効化に次のコマンドを使用します。
++
++```powershell
++.\.venv\Scripts\Activate.ps1
++python -m pip install -e .
++```
++
++## 使い方
++
++`search` は `memory/errors` 内の過去事例から類似するエラーを検索し、根拠とともにランキング表示します。
++
++```bash
++python -m debug_memory search --text "ModuleNotFoundError: No module named 'dotenv'" --top-k 3
++```
++
++出力例:
++
++```text
++Search Results
++==============
++
++[1] Pythonでdotenvが読み込めない
++    score: 1.000
++    status: resolved
++    tags: python, dotenv, venv
++    reasons:
++    - ...
++```
++
++`ask` は類似事例から解決済みの候補を選び、元になった事例を証拠として添えて提示します。過去事例に基づく候補であり、現在の問題への確実な解決を保証するものではありません。
++
++```bash
++python -m debug_memory ask --text "ModuleNotFoundError: No module named 'dotenv'"
++```
++
++出力例:
++
++```text
++Debug Memory Answer
++===================
++
++Top solution candidate:
++Pythonでdotenvが読み込めない
++
++Solution:
++pip install python-dotenv
++
++Evidence:
++[1] Pythonでdotenvが読み込めない
++    status: resolved
++```
++
++既定以外の事例ディレクトリを検索する場合は、いずれのコマンドでも `--errors-dir path/to/errors` を指定できます。
++
++## Markdownフォーマット
++
++エラー事例は、YAML frontmatter と Markdown のセクションで構成します。`## Error` と `## Solution` は必須で、`## Context` と `## Notes` は任意です。
++
++````markdown
++---
++id: err_20260526_001
++title: Pythonでdotenvが読み込めない
++status: resolved
++tags:
++  - python
++  - dotenv
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++ModuleNotFoundError: No module named 'dotenv'
++```
++
++## Context
++
++FastAPI 起動時に import で失敗した。
++
++## Solution
++
++```bash
++pip install python-dotenv
++```
++
++## Notes
++
++使用中の仮想環境も確認する。
++````
++
++frontmatter のフィールド:
++
++- `id` (必須): 事例を一意に識別する ID
++- `title` (必須): 検索結果に表示する短いタイトル
++- `status` (必須): `resolved` など、事例の解決状態
++- `tags` (任意): 検索の照合に使用できるタグのリスト
++- `language` (任意): 関連するプログラミング言語
++- `frameworks` (任意): 関連するフレームワークのリスト
++- `created_at` (任意): 事例の作成日
++- `updated_at` (任意): 事例の更新日
++
++## なぜLLMを使わないのか
+ 
+-> **Vol.1**: Markdown ベースの類似エラー検索 + 解決候補返却の内部システム．LLM・Web UI・ベクトルDB は使用しない．
++Vol.1 は、同じ入力に対して追跡しやすい結果を返す決定的な仕組みを優先します。完全にオフラインで動作するため API コストや通信要件がなく、どの Markdown 事例と一致理由が解決候補の根拠になったかを確認できます。
++
++## テスト
+ 
+-詳細は実装完了後に追記される．
++```bash
++pytest tests/ -v
++```
++
++## 今後の拡張予定
++
++- LLM を利用した解決候補の整理や説明の補助
++- Web UI による検索、閲覧、事例登録
++- ベクトルデータベースを用いた意味的な類似検索
++- Claude Skill との連携
++- Codex による auto-fix ワークフローとの連携
++- GitHub Issue や開発記録との連携
+
+diff --git a/README.md b/README.md
+index 78e699b95415f849599999f6427f5da82e733318..035a70c5d8dd7f6d80ce8c275eb96aa93e3d0f77
+--- a/README.md
++++ b/README.md
+@@ -1,7 +1,153 @@
+ # Debug Memory
+ 
+-A local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++Debug Memory は、ソフトウェア開発中に遭遇したエラー事例を Markdown ファイルとしてローカルに蓄積し、入力したエラーメッセージに似た過去事例と解決候補を検索する CLI ツールです。Vol.1 は外部サービスに依存せず、再現可能なルールベースの検索によって、過去の記録を根拠付きで再利用できるようにします。
++
++## Vol.1 でできること
++
++- Markdown 形式で保存されたトラブルシューティング事例の読み込み
++- エラー文や問い合わせ文から検索用シグネチャの抽出
++- キーワード、タグなどに基づく類似エラー事例のランキング表示
++- 一致理由、スコア、参照ファイルを含む検索結果の表示
++- 解決済みの類似事例に基づく、断定を避けた解決候補の提示
++- `search` と `ask` のローカル CLI コマンドの実行
++
++## Vol.1 でやらないこと
++
++- LLM を使った推論、回答生成、要約
++- Web UI の提供
++- ベクトルデータベースや埋め込み検索の導入
++- 外部 API やクラウドサービスへの接続
++
++## セットアップ
++
++Python の仮想環境を作成し、プロジェクトを editable install します。
++
++```bash
++python -m venv .venv
++source .venv/bin/activate
++python -m pip install -e .
++```
++
++Windows PowerShell の場合は、仮想環境の有効化に次のコマンドを使用します。
++
++```powershell
++.\.venv\Scripts\Activate.ps1
++python -m pip install -e .
++```
++
++## 使い方
++
++`search` は `memory/errors` 内の過去事例から類似するエラーを検索し、根拠とともにランキング表示します。
++
++```bash
++python -m debug_memory search --text "ModuleNotFoundError: No module named 'dotenv'" --top-k 3
++```
++
++出力例:
++
++```text
++Search Results
++==============
++
++[1] Pythonでdotenvが読み込めない
++    score: 1.000
++    status: resolved
++    tags: python, dotenv, venv
++    reasons:
++    - ...
++```
++
++`ask` は類似事例から解決済みの候補を選び、元になった事例を証拠として添えて提示します。過去事例に基づく候補であり、現在の問題への確実な解決を保証するものではありません。
++
++```bash
++python -m debug_memory ask --text "ModuleNotFoundError: No module named 'dotenv'"
++```
++
++出力例:
++
++```text
++Debug Memory Answer
++===================
++
++Top solution candidate:
++Pythonでdotenvが読み込めない
++
++Solution:
++pip install python-dotenv
++
++Evidence:
++[1] Pythonでdotenvが読み込めない
++    status: resolved
++```
++
++既定以外の事例ディレクトリを検索する場合は、いずれのコマンドでも `--errors-dir path/to/errors` を指定できます。
++
++## Markdownフォーマット
++
++エラー事例は、YAML frontmatter と Markdown のセクションで構成します。`## Error` と `## Solution` は必須で、`## Context` と `## Notes` は任意です。
++
++````markdown
++---
++id: err_20260526_001
++title: Pythonでdotenvが読み込めない
++status: resolved
++tags:
++  - python
++  - dotenv
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++ModuleNotFoundError: No module named 'dotenv'
++```
++
++## Context
++
++FastAPI 起動時に import で失敗した。
++
++## Solution
++
++```bash
++pip install python-dotenv
++```
++
++## Notes
++
++使用中の仮想環境も確認する。
++````
++
++frontmatter のフィールド:
++
++- `id` (必須): 事例を一意に識別する ID
++- `title` (必須): 検索結果に表示する短いタイトル
++- `status` (必須): `resolved` など、事例の解決状態
++- `tags` (任意): 検索の照合に使用できるタグのリスト
++- `language` (任意): 関連するプログラミング言語
++- `frameworks` (任意): 関連するフレームワークのリスト
++- `created_at` (任意): 事例の作成日
++- `updated_at` (任意): 事例の更新日
++
++## なぜLLMを使わないのか
+ 
+-> **Vol.1**: Markdown ベースの類似エラー検索 + 解決候補返却の内部システム．LLM・Web UI・ベクトルDB は使用しない．
++Vol.1 は、同じ入力に対して追跡しやすい結果を返す決定的な仕組みを優先します。完全にオフラインで動作するため API コストや通信要件がなく、どの Markdown 事例と一致理由が解決候補の根拠になったかを確認できます。
++
++## テスト
+ 
+-詳細は実装完了後に追記される．
++```bash
++pytest tests/ -v
++```
++
++## 今後の拡張予定
++
++- LLM を利用した解決候補の整理や説明の補助
++- Web UI による検索、閲覧、事例登録
++- ベクトルデータベースを用いた意味的な類似検索
++- Claude Skill との連携
++- Codex による auto-fix ワークフローとの連携
++- GitHub Issue や開発記録との連携
+
+exec
+/bin/zsh -lc "sed -n '86,153p' README.md" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+
+エラー事例は、YAML frontmatter と Markdown のセクションで構成します。`## Error` と `## Solution` は必須で、`## Context` と `## Notes` は任意です。
+
+````markdown
+---
+id: err_20260526_001
+title: Pythonでdotenvが読み込めない
+status: resolved
+tags:
+  - python
+  - dotenv
+language: Python
+frameworks:
+  - FastAPI
+created_at: 2026-05-26
+updated_at: 2026-05-26
+---
+
+## Error
+
+```text
+ModuleNotFoundError: No module named 'dotenv'
+```
+
+## Context
+
+FastAPI 起動時に import で失敗した。
+
+## Solution
+
+```bash
+pip install python-dotenv
+```
+
+## Notes
+
+使用中の仮想環境も確認する。
+````
+
+frontmatter のフィールド:
+
+- `id` (必須): 事例を一意に識別する ID
+- `title` (必須): 検索結果に表示する短いタイトル
+- `status` (必須): `resolved` など、事例の解決状態
+- `tags` (任意): 検索の照合に使用できるタグのリスト
+- `language` (任意): 関連するプログラミング言語
+- `frameworks` (任意): 関連するフレームワークのリスト
+- `created_at` (任意): 事例の作成日
+- `updated_at` (任意): 事例の更新日
+
+## なぜLLMを使わないのか
+
+Vol.1 は、同じ入力に対して追跡しやすい結果を返す決定的な仕組みを優先します。完全にオフラインで動作するため API コストや通信要件がなく、どの Markdown 事例と一致理由が解決候補の根拠になったかを確認できます。
+
+## テスト
+
+```bash
+pytest tests/ -v
+```
+
+## 今後の拡張予定
+
+- LLM を利用した解決候補の整理や説明の補助
+- Web UI による検索、閲覧、事例登録
+- ベクトルデータベースを用いた意味的な類似検索
+- Claude Skill との連携
+- Codex による auto-fix ワークフローとの連携
+- GitHub Issue や開発記録との連携
+
+exec
+/bin/zsh -lc 'wc -l README.md && head -20 README.md' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+     153 README.md
+# Debug Memory
+
+Debug Memory は、ソフトウェア開発中に遭遇したエラー事例を Markdown ファイルとしてローカルに蓄積し、入力したエラーメッセージに似た過去事例と解決候補を検索する CLI ツールです。Vol.1 は外部サービスに依存せず、再現可能なルールベースの検索によって、過去の記録を根拠付きで再利用できるようにします。
+
+## Vol.1 でできること
+
+- Markdown 形式で保存されたトラブルシューティング事例の読み込み
+- エラー文や問い合わせ文から検索用シグネチャの抽出
+- キーワード、タグなどに基づく類似エラー事例のランキング表示
+- 一致理由、スコア、参照ファイルを含む検索結果の表示
+- 解決済みの類似事例に基づく、断定を避けた解決候補の提示
+- `search` と `ask` のローカル CLI コマンドの実行
+
+## Vol.1 でやらないこと
+
+- LLM を使った推論、回答生成、要約
+- Web UI の提供
+- ベクトルデータベースや埋め込み検索の導入
+- 外部 API やクラウドサービスへの接続
+
+
+exec
+/bin/zsh -lc "rg -n '"'^# |''^## '"' README.md" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+1:# Debug Memory
+5:## Vol.1 でできること
+14:## Vol.1 でやらないこと
+21:## セットアップ
+38:## 使い方
+85:## Markdownフォーマット
+104:## Error
+110:## Context
+114:## Solution
+120:## Notes
+136:## なぜLLMを使わないのか
+140:## テスト
+146:## 今後の拡張予定
+
+diff --git a/README.md b/README.md
+index 78e699b95415f849599999f6427f5da82e733318..035a70c5d8dd7f6d80ce8c275eb96aa93e3d0f77
+--- a/README.md
++++ b/README.md
+@@ -1,7 +1,153 @@
+ # Debug Memory
+ 
+-A local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++Debug Memory は、ソフトウェア開発中に遭遇したエラー事例を Markdown ファイルとしてローカルに蓄積し、入力したエラーメッセージに似た過去事例と解決候補を検索する CLI ツールです。Vol.1 は外部サービスに依存せず、再現可能なルールベースの検索によって、過去の記録を根拠付きで再利用できるようにします。
++
++## Vol.1 でできること
++
++- Markdown 形式で保存されたトラブルシューティング事例の読み込み
++- エラー文や問い合わせ文から検索用シグネチャの抽出
++- キーワード、タグなどに基づく類似エラー事例のランキング表示
++- 一致理由、スコア、参照ファイルを含む検索結果の表示
++- 解決済みの類似事例に基づく、断定を避けた解決候補の提示
++- `search` と `ask` のローカル CLI コマンドの実行
++
++## Vol.1 でやらないこと
++
++- LLM を使った推論、回答生成、要約
++- Web UI の提供
++- ベクトルデータベースや埋め込み検索の導入
++- 外部 API やクラウドサービスへの接続
++
++## セットアップ
++
++Python の仮想環境を作成し、プロジェクトを editable install します。
++
++```bash
++python -m venv .venv
++source .venv/bin/activate
++python -m pip install -e .
++```
++
++Windows PowerShell の場合は、仮想環境の有効化に次のコマンドを使用します。
++
++```powershell
++.\.venv\Scripts\Activate.ps1
++python -m pip install -e .
++```
++
++## 使い方
++
++`search` は `memory/errors` 内の過去事例から類似するエラーを検索し、根拠とともにランキング表示します。
++
++```bash
++python -m debug_memory search --text "ModuleNotFoundError: No module named 'dotenv'" --top-k 3
++```
++
++出力例:
++
++```text
++Search Results
++==============
++
++[1] Pythonでdotenvが読み込めない
++    score: 1.000
++    status: resolved
++    tags: python, dotenv, venv
++    reasons:
++    - ...
++```
++
++`ask` は類似事例から解決済みの候補を選び、元になった事例を証拠として添えて提示します。過去事例に基づく候補であり、現在の問題への確実な解決を保証するものではありません。
++
++```bash
++python -m debug_memory ask --text "ModuleNotFoundError: No module named 'dotenv'"
++```
++
++出力例:
++
++```text
++Debug Memory Answer
++===================
++
++Top solution candidate:
++Pythonでdotenvが読み込めない
++
++Solution:
++pip install python-dotenv
++
++Evidence:
++[1] Pythonでdotenvが読み込めない
++    status: resolved
++```
++
++既定以外の事例ディレクトリを検索する場合は、いずれのコマンドでも `--errors-dir path/to/errors` を指定できます。
++
++## Markdownフォーマット
++
++エラー事例は、YAML frontmatter と Markdown のセクションで構成します。`## Error` と `## Solution` は必須で、`## Context` と `## Notes` は任意です。
++
++````markdown
++---
++id: err_20260526_001
++title: Pythonでdotenvが読み込めない
++status: resolved
++tags:
++  - python
++  - dotenv
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++ModuleNotFoundError: No module named 'dotenv'
++```
++
++## Context
++
++FastAPI 起動時に import で失敗した。
++
++## Solution
++
++```bash
++pip install python-dotenv
++```
++
++## Notes
++
++使用中の仮想環境も確認する。
++````
++
++frontmatter のフィールド:
++
++- `id` (必須): 事例を一意に識別する ID
++- `title` (必須): 検索結果に表示する短いタイトル
++- `status` (必須): `resolved` など、事例の解決状態
++- `tags` (任意): 検索の照合に使用できるタグのリスト
++- `language` (任意): 関連するプログラミング言語
++- `frameworks` (任意): 関連するフレームワークのリスト
++- `created_at` (任意): 事例の作成日
++- `updated_at` (任意): 事例の更新日
++
++## なぜLLMを使わないのか
+ 
+-> **Vol.1**: Markdown ベースの類似エラー検索 + 解決候補返却の内部システム．LLM・Web UI・ベクトルDB は使用しない．
++Vol.1 は、同じ入力に対して追跡しやすい結果を返す決定的な仕組みを優先します。完全にオフラインで動作するため API コストや通信要件がなく、どの Markdown 事例と一致理由が解決候補の根拠になったかを確認できます。
++
++## テスト
+ 
+-詳細は実装完了後に追記される．
++```bash
++pytest tests/ -v
++```
++
++## 今後の拡張予定
++
++- LLM を利用した解決候補の整理や説明の補助
++- Web UI による検索、閲覧、事例登録
++- ベクトルデータベースを用いた意味的な類似検索
++- Claude Skill との連携
++- Codex による auto-fix ワークフローとの連携
++- GitHub Issue や開発記録との連携
+
+codex
+{"status":"completed","changed_files":["README.md"],"summary":"README.md を Vol.1 の包括的な日本語ドキュメントに更新しました。機能・非スコープ、セットアップ、CLI 使用例、Markdown フォーマット、LLM を使わない理由、テスト、今後の拡張予定を記載し、`wc -l README.md` と `head -20 README.md` で確認済みです（153 行）。","tests_run":[]}
+diff --git a/README.md b/README.md
+index 78e699b95415f849599999f6427f5da82e733318..035a70c5d8dd7f6d80ce8c275eb96aa93e3d0f77
+--- a/README.md
++++ b/README.md
+@@ -1,7 +1,153 @@
+ # Debug Memory
+ 
+-A local CLI tool that searches Markdown-based troubleshooting notes and returns solution candidates for similar software development errors.
++Debug Memory は、ソフトウェア開発中に遭遇したエラー事例を Markdown ファイルとしてローカルに蓄積し、入力したエラーメッセージに似た過去事例と解決候補を検索する CLI ツールです。Vol.1 は外部サービスに依存せず、再現可能なルールベースの検索によって、過去の記録を根拠付きで再利用できるようにします。
++
++## Vol.1 でできること
++
++- Markdown 形式で保存されたトラブルシューティング事例の読み込み
++- エラー文や問い合わせ文から検索用シグネチャの抽出
++- キーワード、タグなどに基づく類似エラー事例のランキング表示
++- 一致理由、スコア、参照ファイルを含む検索結果の表示
++- 解決済みの類似事例に基づく、断定を避けた解決候補の提示
++- `search` と `ask` のローカル CLI コマンドの実行
++
++## Vol.1 でやらないこと
++
++- LLM を使った推論、回答生成、要約
++- Web UI の提供
++- ベクトルデータベースや埋め込み検索の導入
++- 外部 API やクラウドサービスへの接続
++
++## セットアップ
++
++Python の仮想環境を作成し、プロジェクトを editable install します。
++
++```bash
++python -m venv .venv
++source .venv/bin/activate
++python -m pip install -e .
++```
++
++Windows PowerShell の場合は、仮想環境の有効化に次のコマンドを使用します。
++
++```powershell
++.\.venv\Scripts\Activate.ps1
++python -m pip install -e .
++```
++
++## 使い方
++
++`search` は `memory/errors` 内の過去事例から類似するエラーを検索し、根拠とともにランキング表示します。
++
++```bash
++python -m debug_memory search --text "ModuleNotFoundError: No module named 'dotenv'" --top-k 3
++```
++
++出力例:
++
++```text
++Search Results
++==============
++
++[1] Pythonでdotenvが読み込めない
++    score: 1.000
++    status: resolved
++    tags: python, dotenv, venv
++    reasons:
++    - ...
++```
++
++`ask` は類似事例から解決済みの候補を選び、元になった事例を証拠として添えて提示します。過去事例に基づく候補であり、現在の問題への確実な解決を保証するものではありません。
++
++```bash
++python -m debug_memory ask --text "ModuleNotFoundError: No module named 'dotenv'"
++```
++
++出力例:
++
++```text
++Debug Memory Answer
++===================
++
++Top solution candidate:
++Pythonでdotenvが読み込めない
++
++Solution:
++pip install python-dotenv
++
++Evidence:
++[1] Pythonでdotenvが読み込めない
++    status: resolved
++```
++
++既定以外の事例ディレクトリを検索する場合は、いずれのコマンドでも `--errors-dir path/to/errors` を指定できます。
++
++## Markdownフォーマット
++
++エラー事例は、YAML frontmatter と Markdown のセクションで構成します。`## Error` と `## Solution` は必須で、`## Context` と `## Notes` は任意です。
++
++````markdown
++---
++id: err_20260526_001
++title: Pythonでdotenvが読み込めない
++status: resolved
++tags:
++  - python
++  - dotenv
++language: Python
++frameworks:
++  - FastAPI
++created_at: 2026-05-26
++updated_at: 2026-05-26
++---
++
++## Error
++
++```text
++ModuleNotFoundError: No module named 'dotenv'
++```
++
++## Context
++
++FastAPI 起動時に import で失敗した。
++
++## Solution
++
++```bash
++pip install python-dotenv
++```
++
++## Notes
++
++使用中の仮想環境も確認する。
++````
++
++frontmatter のフィールド:
++
++- `id` (必須): 事例を一意に識別する ID
++- `title` (必須): 検索結果に表示する短いタイトル
++- `status` (必須): `resolved` など、事例の解決状態
++- `tags` (任意): 検索の照合に使用できるタグのリスト
++- `language` (任意): 関連するプログラミング言語
++- `frameworks` (任意): 関連するフレームワークのリスト
++- `created_at` (任意): 事例の作成日
++- `updated_at` (任意): 事例の更新日
++
++## なぜLLMを使わないのか
+ 
+-> **Vol.1**: Markdown ベースの類似エラー検索 + 解決候補返却の内部システム．LLM・Web UI・ベクトルDB は使用しない．
++Vol.1 は、同じ入力に対して追跡しやすい結果を返す決定的な仕組みを優先します。完全にオフラインで動作するため API コストや通信要件がなく、どの Markdown 事例と一致理由が解決候補の根拠になったかを確認できます。
++
++## テスト
+ 
+-詳細は実装完了後に追記される．
++```bash
++pytest tests/ -v
++```
++
++## 今後の拡張予定
++
++- LLM を利用した解決候補の整理や説明の補助
++- Web UI による検索、閲覧、事例登録
++- ベクトルデータベースを用いた意味的な類似検索
++- Claude Skill との連携
++- Codex による auto-fix ワークフローとの連携
++- GitHub Issue や開発記録との連携
+
+tokens used
+21,998
