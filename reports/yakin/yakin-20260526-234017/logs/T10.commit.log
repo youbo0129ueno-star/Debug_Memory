@@ -1,0 +1,11 @@
+[ai/yakin-20260526-234017 f8d79f4] docs(T10): comprehensive README for Vol.1 (setup, usage, format, rationale, roadmap)
+ 10 files changed, 2373 insertions(+), 3 deletions(-)
+ create mode 100644 reports/yakin/yakin-20260526-234017/codex-reports/T10-report.md
+ create mode 100644 reports/yakin/yakin-20260526-234017/diffs/T10.changed-files
+ create mode 100644 reports/yakin/yakin-20260526-234017/diffs/T10.diffstat
+ create mode 100644 reports/yakin/yakin-20260526-234017/handoffs/T10-to-codex.md
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T08.commit.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T08.push.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T10.stderr.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T10.stdout.log
+ create mode 100644 reports/yakin/yakin-20260526-234017/logs/T10.verify.log
