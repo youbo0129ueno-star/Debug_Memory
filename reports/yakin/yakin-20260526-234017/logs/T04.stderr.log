@@ -1,0 +1,2040 @@
+Reading prompt from stdin...
+OpenAI Codex v0.133.0
+--------
+workdir: /Users/uenoyuuta/Debug_Memory
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: medium
+reasoning summaries: none
+session id: 019e64c9-5110-7bb0-b38f-86a5e1bd52f1
+--------
+user
+# Role
+
+Fresh Codex implementation worker under Claude Yakin Agent.
+
+# Task
+
+Implement `debug_memory/parser.py` and `tests/test_parser.py`.
+
+The parser reads Markdown files from `memory/errors/*.md`, parses YAML frontmatter, extracts the named sections (`## Error`, `## Context`, `## Solution`, `## Notes`), and returns an `ErrorCase` dataclass.
+
+# Acceptance Criteria
+
+- [ ] `parse_error_case(path: Path) -> ErrorCase` function exists in `debug_memory/parser.py`
+- [ ] `load_error_cases(errors_dir: Path) -> list[ErrorCase]` function exists in `debug_memory/parser.py`
+- [ ] YAML frontmatter parsing uses `yaml.safe_load` (PyYAML)
+- [ ] Extracts `## Error`, `## Context`, `## Solution`, `## Notes` sections from Markdown body
+- [ ] Optional sections (Context, Notes) become empty string `""` when absent
+- [ ] Required sections (Error, Solution) raise `ValueError` with a clear message when absent
+- [ ] Required frontmatter fields (`id`, `title`, `status`) raise `ValueError` when absent
+- [ ] Optional frontmatter fields default sanely:
+  - `tags: []`
+  - `language: None`
+  - `frameworks: []`
+- [ ] `tests/test_parser.py` has at least these tests (all passing):
+  - test that frontmatter is correctly parsed (id, title, status, tags)
+  - test that `## Error` content is extracted
+  - test that `## Solution` content is extracted
+  - test that missing optional sections (Context, Notes) result in empty string
+  - test that the 3 sample files in `memory/errors/` all parse without error
+- [ ] `pytest tests/test_parser.py -v` exits 0
+
+# Implementation hints
+
+- Frontmatter is delimited by `---` at lines 1 and N (e.g., first 2 occurrences of `---` on their own line)
+- Section extraction: split body on `\n## ` (with leading newline) and dispatch by heading name
+- Strip section bodies of leading/trailing whitespace
+- Code fences inside sections must be preserved
+- Use `Path.read_text(encoding="utf-8")`
+
+# Test data location
+
+The 3 sample Markdown files are at:
+- `memory/errors/2026-05-26_python-dotenv.md`
+- `memory/errors/2026-05-26_fastapi-cors.md`
+- `memory/errors/2026-05-26_react-undefined-map.md`
+
+You may create additional fixture files under `tests/fixtures/` if needed for edge cases, but the real sample files should be exercised directly too.
+
+# Allowed Edit Scope
+
+- /Users/uenoyuuta/Debug_Memory/debug_memory/parser.py
+- /Users/uenoyuuta/Debug_Memory/tests/test_parser.py
+- /Users/uenoyuuta/Debug_Memory/tests/fixtures/** (optional)
+- /Users/uenoyuuta/Debug_Memory/tests/conftest.py (optional)
+
+# Forbidden Edit Scope
+
+- debug_memory/models.py (already done)
+- memory/errors/*.md (do not modify sample data)
+- Everything else.
+
+# Verification
+
+```
+cd /Users/uenoyuuta/Debug_Memory
+source .venv/bin/activate
+pip install pytest -q
+pytest tests/test_parser.py -v
+deactivate
+```
+
+Expected: all tests pass, exit 0.
+
+# Final Report Format
+
+```json
+{
+  "status": "completed | partial | failed",
+  "changed_files": [...],
+  "summary": "...",
+  "tests_run": ["pytest tests/test_parser.py: <N passed>"]
+}
+```
+
+codex
+I’ll implement the Markdown/frontmatter parser and its focused tests within the allowed files. I’ll first inspect the existing model, package layout, sample note shape, and current test setup so the new code matches the repository.
+exec
+/bin/zsh -lc 'git status --short' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+?? reports/yakin/yakin-20260526-234017/handoffs/T04-to-codex.md
+?? reports/yakin/yakin-20260526-234017/logs/T04.stderr.log
+?? reports/yakin/yakin-20260526-234017/logs/T04.stdout.log
+?? reports/yakin/yakin-20260526-234017/run-task.sh
+
+exec
+/bin/zsh -lc "pwd && rg --files -g 'debug_memory/**' -g 'tests/**' -g 'memory/errors/*.md' -g 'pyproject.toml' -g 'requirements*.txt' -g 'setup.*' -g 'AGENTS.md'" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+/Users/uenoyuuta/Debug_Memory
+AGENTS.md
+debug_memory/signature.py
+debug_memory/search.py
+debug_memory/rag.py
+debug_memory/cli.py
+debug_memory/parser.py
+debug_memory/__pycache__/__init__.cpython-313.pyc
+debug_memory/__pycache__/models.cpython-313.pyc
+debug_memory/__init__.py
+debug_memory/render.py
+debug_memory/models.py
+tests/__init__.py
+pyproject.toml
+memory/errors/2026-05-26_fastapi-cors.md
+memory/errors/2026-05-26_python-dotenv.md
+memory/errors/2026-05-26_react-undefined-map.md
+
+codex
+The worktree contains unrelated untracked handoff/log files; I will leave them untouched. The relevant package files are present, so I’m reading the model, current parser placeholder, project dependency declaration, and representative sample notes next.
+exec
+/bin/zsh -lc "sed -n '1,220p' debug_memory/models.py; sed -n '1,240p' debug_memory/parser.py; sed -n '1,200p' pyproject.toml; sed -n '1,220p' tests/__init__.py" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass
+class ErrorCase:
+    id: str
+    title: str
+    status: str
+    tags: list[str]
+    language: str | None
+    frameworks: list[str]
+    error: str
+    context: str
+    solution: str
+    notes: str
+    path: Path
+
+
+@dataclass
+class ErrorSignature:
+    raw_text: str
+    exception_names: list[str]
+    quoted_terms: list[str]
+    package_names: list[str]
+    commands: list[str]
+    keywords: list[str]
+
+
+@dataclass
+class SearchResult:
+    case: ErrorCase
+    score: float
+    reasons: list[str]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "debug-memory"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["PyYAML"]
+
+[project.scripts]
+debug-memory = "debug_memory.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["debug_memory*"]
+
+
+exec
+/bin/zsh -lc 'rg -n "ErrorCase|parse_error_case|load_error_cases|pytest|yaml|PyYAML" debug_memory tests pyproject.toml' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+pyproject.toml:9:dependencies = ["PyYAML"]
+debug_memory/models.py:8:class ErrorCase:
+debug_memory/models.py:34:    case: ErrorCase
+
+exec
+/bin/zsh -lc "for f in memory/errors/*.md; do printf '\\n== %s ==\\n' \""'$f"; sed -n '"'1,180p' \""'$f"; done' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+
+== memory/errors/2026-05-26_fastapi-cors.md ==
+---
+id: err_20260526_002
+title: FastAPIでCORSエラーが出る
+status: resolved
+tags:
+  - fastapi
+  - cors
+  - python
+language: Python
+frameworks:
+  - FastAPI
+created_at: 2026-05-26
+updated_at: 2026-05-26
+---
+
+## Error
+
+```text
+Access to fetch at 'http://localhost:8000' from origin 'http://localhost:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+```
+
+## Context
+
+Next.js (port 3000) フロントエンドから FastAPI (port 8000) バックエンドを fetch したときにブラウザのコンソールで発生。
+
+## Solution
+
+CORSMiddleware を FastAPI アプリに追加する:
+
+```python
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
+
+## Notes
+
+本番では `allow_origins=["*"]` は避け、明示的にドメインを列挙する。`allow_credentials=True` のときは `allow_origins=["*"]` が無効になる仕様にも注意。
+
+== memory/errors/2026-05-26_python-dotenv.md ==
+---
+id: err_20260526_001
+title: Pythonでdotenvが読み込めない
+status: resolved
+tags:
+  - python
+  - dotenv
+  - venv
+language: Python
+frameworks:
+  - FastAPI
+created_at: 2026-05-26
+updated_at: 2026-05-26
+---
+
+## Error
+
+```text
+ModuleNotFoundError: No module named 'dotenv'
+```
+
+## Context
+
+venvを作り直したあと、FastAPI起動時に発生。`from dotenv import load_dotenv` の行で落ちる。
+
+## Solution
+
+```bash
+pip install python-dotenv
+```
+
+パッケージ名は `dotenv` ではなく `python-dotenv`。インポート名と pip パッケージ名が違うので注意。
+
+## Notes
+
+仮想環境が違う場合もあるので、`which python` と `pip list` を確認する。VSCode などのIDEで別の venv を指している場合も多い。
+
+== memory/errors/2026-05-26_react-undefined-map.md ==
+---
+id: err_20260526_003
+title: ReactでCannot read properties of undefined (reading 'map')
+status: resolved
+tags:
+  - react
+  - javascript
+  - typescript
+language: JavaScript
+frameworks:
+  - React
+created_at: 2026-05-26
+updated_at: 2026-05-26
+---
+
+## Error
+
+```text
+TypeError: Cannot read properties of undefined (reading 'map')
+```
+
+## Context
+
+API から取得したデータを `data.map(...)` でレンダリングしたときに発生。初回レンダリング時はまだ fetch が完了しておらず、`data` が `undefined` のため map が呼べない。
+
+## Solution
+
+3つのアプローチがある:
+
+1. **初期値を空配列にする**
+   ```javascript
+   const [data, setData] = useState([])
+   ```
+
+2. **Optional chaining を使う**
+   ```javascript
+   {data?.map((item) => <Item key={item.id} {...item} />)}
+   ```
+
+3. **Loading状態を確認する**
+   ```javascript
+   if (loading) return <Spinner />
+   if (!data) return null
+   return data.map(...)
+   ```
+
+## Notes
+
+TypeScript を使っているなら `data: Item[] | undefined` のように型を明示すると、コンパイラがガード忘れを検出してくれる。
+
+codex
+`ErrorCase` already defines the needed fields, `parser.py` is empty, and all three samples use standard frontmatter followed by the four headings. I’ll implement strict frontmatter and required-section validation, preserve raw section content after trimming, then add focused parser tests including defaults and failure cases.
+  ✓ Inspect existing model, sample Markdown format, and test/dependency context
+  → Implement frontmatter and Markdown section parsing in debug_memory/parser.py
+  • Add parser tests covering sample files, defaults, content extraction, and required field/section failures
+  • Run targeted pytest verification
+codex
+I’m now writing `parser.py`: it will parse only delimiter-framed YAML with `yaml.safe_load`, validate the required metadata and sections, and load sorted `.md` files deterministically. After that I’ll add tests against both a minimal temporary case and the real samples.
+apply patch
+patch: completed
+/Users/uenoyuuta/Debug_Memory/debug_memory/parser.py
+/Users/uenoyuuta/Debug_Memory/tests/test_parser.py
+diff --git a/debug_memory/parser.py b/debug_memory/parser.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..be7a0e6d32b50f3cdec0d14aa644e951b907ae0e
+--- a/debug_memory/parser.py
++++ b/debug_memory/parser.py
+@@ -1 +1,85 @@
++from __future__ import annotations
++
++import re
++from pathlib import Path
++from typing import Any
++
++import yaml
++
++from .models import ErrorCase
++
++
++_FRONTMATTER_DELIMITER = "---"
++_SECTION_PATTERN = re.compile(
++    r"^##[ \t]+(Error|Context|Solution|Notes)[ \t]*\n(.*?)(?=^##[ \t]+|\Z)",
++    re.MULTILINE | re.DOTALL,
++)
++_REQUIRED_FIELDS = ("id", "title", "status")
++_REQUIRED_SECTIONS = ("Error", "Solution")
++
++
++def _split_frontmatter(text: str, path: Path) -> tuple[dict[str, Any], str]:
++    lines = text.splitlines()
++    if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
++        raise ValueError(f"{path}: YAML frontmatter must start with '---'")
++
++    try:
++        closing_delimiter = next(
++            index
++            for index, line in enumerate(lines[1:], start=1)
++            if line.strip() == _FRONTMATTER_DELIMITER
++        )
++    except StopIteration as exc:
++        raise ValueError(f"{path}: YAML frontmatter is missing closing '---'") from exc
++
++    frontmatter_text = "\n".join(lines[1:closing_delimiter])
++    try:
++        metadata = yaml.safe_load(frontmatter_text) or {}
++    except yaml.YAMLError as exc:
++        raise ValueError(f"{path}: invalid YAML frontmatter: {exc}") from exc
++
++    if not isinstance(metadata, dict):
++        raise ValueError(f"{path}: YAML frontmatter must be a mapping")
+ 
++    body = "\n".join(lines[closing_delimiter + 1 :])
++    return metadata, body
++
++
++def _extract_sections(body: str, path: Path) -> dict[str, str]:
++    sections = {
++        heading: content.strip()
++        for heading, content in _SECTION_PATTERN.findall(body)
++    }
++    for heading in _REQUIRED_SECTIONS:
++        if heading not in sections:
++            raise ValueError(f"{path}: required Markdown section '## {heading}' is missing")
++    return sections
++
++
++def parse_error_case(path: Path) -> ErrorCase:
++    """Parse one Markdown troubleshooting note into an ErrorCase."""
++    metadata, body = _split_frontmatter(path.read_text(encoding="utf-8"), path)
++
++    for field in _REQUIRED_FIELDS:
++        if field not in metadata or metadata[field] is None:
++            raise ValueError(f"{path}: required frontmatter field '{field}' is missing")
++
++    sections = _extract_sections(body, path)
++    return ErrorCase(
++        id=str(metadata["id"]),
++        title=str(metadata["title"]),
++        status=str(metadata["status"]),
++        tags=list(metadata.get("tags") or []),
++        language=metadata.get("language"),
++        frameworks=list(metadata.get("frameworks") or []),
++        error=sections["Error"],
++        context=sections.get("Context", ""),
++        solution=sections["Solution"],
++        notes=sections.get("Notes", ""),
++        path=path,
++    )
++
++
++def load_error_cases(errors_dir: Path) -> list[ErrorCase]:
++    """Parse all Markdown troubleshooting notes in an error memory directory."""
++    return [parse_error_case(path) for path in sorted(errors_dir.glob("*.md"))]
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..dc1a5404d1350413f0c4c10fd0743347afbda0cc
+--- /dev/null
++++ b/tests/test_parser.py
+@@ -0,0 +1,107 @@
++from pathlib import Path
++
++import pytest
++
++from debug_memory.parser import load_error_cases, parse_error_case
++
++
++ERRORS_DIR = Path(__file__).parent.parent / "memory" / "errors"
++
++
++def _write_case(tmp_path: Path, body: str, frontmatter: str | None = None) -> Path:
++    metadata = frontmatter or """\
++id: err_test
++title: Test error
++status: resolved
++tags:
++  - python
++  - parsing
++"""
++    path = tmp_path / "case.md"
++    path.write_text(f"---\n{metadata}---\n\n{body}", encoding="utf-8")
++    return path
++
++
++def test_frontmatter_is_parsed(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++    )
++
++    case = parse_error_case(path)
++
++    assert case.id == "err_test"
++    assert case.title == "Test error"
++    assert case.status == "resolved"
++    assert case.tags == ["python", "parsing"]
++
++
++def test_error_content_is_extracted_and_preserves_code_fences(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\n```text\nModuleNotFoundError: dotenv\n```\n\n## Solution\n\ninstall it\n",
++    )
++
++    assert parse_error_case(path).error == "```text\nModuleNotFoundError: dotenv\n```"
++
++
++def test_solution_content_is_extracted(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\n```bash\npip install python-dotenv\n```\n",
++    )
++
++    assert parse_error_case(path).solution == "```bash\npip install python-dotenv\n```"
++
++
++def test_missing_optional_sections_and_metadata_use_defaults(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++        frontmatter="id: err_minimal\ntitle: Minimal\nstatus: open\n",
++    )
++
++    case = parse_error_case(path)
++
++    assert case.context == ""
++    assert case.notes == ""
++    assert case.tags == []
++    assert case.language is None
++    assert case.frameworks == []
++
++
++@pytest.mark.parametrize("section", ["Error", "Solution"])
++def test_missing_required_section_raises_value_error(tmp_path: Path, section: str) -> None:
++    included_section = "Solution" if section == "Error" else "Error"
++    path = _write_case(tmp_path, f"## {included_section}\n\ncontent\n")
++
++    with pytest.raises(ValueError, match=rf"## {section}"):
++        parse_error_case(path)
++
++
++@pytest.mark.parametrize("field", ["id", "title", "status"])
++def test_missing_required_frontmatter_field_raises_value_error(
++    tmp_path: Path, field: str
++) -> None:
++    fields = {"id": "err_test", "title": "Test error", "status": "resolved"}
++    del fields[field]
++    frontmatter = "".join(f"{key}: {value}\n" for key, value in fields.items())
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++        frontmatter=frontmatter,
++    )
++
++    with pytest.raises(ValueError, match=field):
++        parse_error_case(path)
++
++
++def test_all_sample_error_files_parse() -> None:
++    cases = load_error_cases(ERRORS_DIR)
++
++    assert len(cases) == 3
++    assert {case.id for case in cases} == {
++        "err_20260526_001",
++        "err_20260526_002",
++        "err_20260526_003",
++    }
+
+diff --git a/debug_memory/parser.py b/debug_memory/parser.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..be7a0e6d32b50f3cdec0d14aa644e951b907ae0e
+--- a/debug_memory/parser.py
++++ b/debug_memory/parser.py
+@@ -1 +1,85 @@
++from __future__ import annotations
++
++import re
++from pathlib import Path
++from typing import Any
++
++import yaml
++
++from .models import ErrorCase
++
++
++_FRONTMATTER_DELIMITER = "---"
++_SECTION_PATTERN = re.compile(
++    r"^##[ \t]+(Error|Context|Solution|Notes)[ \t]*\n(.*?)(?=^##[ \t]+|\Z)",
++    re.MULTILINE | re.DOTALL,
++)
++_REQUIRED_FIELDS = ("id", "title", "status")
++_REQUIRED_SECTIONS = ("Error", "Solution")
++
++
++def _split_frontmatter(text: str, path: Path) -> tuple[dict[str, Any], str]:
++    lines = text.splitlines()
++    if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
++        raise ValueError(f"{path}: YAML frontmatter must start with '---'")
++
++    try:
++        closing_delimiter = next(
++            index
++            for index, line in enumerate(lines[1:], start=1)
++            if line.strip() == _FRONTMATTER_DELIMITER
++        )
++    except StopIteration as exc:
++        raise ValueError(f"{path}: YAML frontmatter is missing closing '---'") from exc
++
++    frontmatter_text = "\n".join(lines[1:closing_delimiter])
++    try:
++        metadata = yaml.safe_load(frontmatter_text) or {}
++    except yaml.YAMLError as exc:
++        raise ValueError(f"{path}: invalid YAML frontmatter: {exc}") from exc
++
++    if not isinstance(metadata, dict):
++        raise ValueError(f"{path}: YAML frontmatter must be a mapping")
+ 
++    body = "\n".join(lines[closing_delimiter + 1 :])
++    return metadata, body
++
++
++def _extract_sections(body: str, path: Path) -> dict[str, str]:
++    sections = {
++        heading: content.strip()
++        for heading, content in _SECTION_PATTERN.findall(body)
++    }
++    for heading in _REQUIRED_SECTIONS:
++        if heading not in sections:
++            raise ValueError(f"{path}: required Markdown section '## {heading}' is missing")
++    return sections
++
++
++def parse_error_case(path: Path) -> ErrorCase:
++    """Parse one Markdown troubleshooting note into an ErrorCase."""
++    metadata, body = _split_frontmatter(path.read_text(encoding="utf-8"), path)
++
++    for field in _REQUIRED_FIELDS:
++        if field not in metadata or metadata[field] is None:
++            raise ValueError(f"{path}: required frontmatter field '{field}' is missing")
++
++    sections = _extract_sections(body, path)
++    return ErrorCase(
++        id=str(metadata["id"]),
++        title=str(metadata["title"]),
++        status=str(metadata["status"]),
++        tags=list(metadata.get("tags") or []),
++        language=metadata.get("language"),
++        frameworks=list(metadata.get("frameworks") or []),
++        error=sections["Error"],
++        context=sections.get("Context", ""),
++        solution=sections["Solution"],
++        notes=sections.get("Notes", ""),
++        path=path,
++    )
++
++
++def load_error_cases(errors_dir: Path) -> list[ErrorCase]:
++    """Parse all Markdown troubleshooting notes in an error memory directory."""
++    return [parse_error_case(path) for path in sorted(errors_dir.glob("*.md"))]
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..dc1a5404d1350413f0c4c10fd0743347afbda0cc
+--- /dev/null
++++ b/tests/test_parser.py
+@@ -0,0 +1,107 @@
++from pathlib import Path
++
++import pytest
++
++from debug_memory.parser import load_error_cases, parse_error_case
++
++
++ERRORS_DIR = Path(__file__).parent.parent / "memory" / "errors"
++
++
++def _write_case(tmp_path: Path, body: str, frontmatter: str | None = None) -> Path:
++    metadata = frontmatter or """\
++id: err_test
++title: Test error
++status: resolved
++tags:
++  - python
++  - parsing
++"""
++    path = tmp_path / "case.md"
++    path.write_text(f"---\n{metadata}---\n\n{body}", encoding="utf-8")
++    return path
++
++
++def test_frontmatter_is_parsed(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++    )
++
++    case = parse_error_case(path)
++
++    assert case.id == "err_test"
++    assert case.title == "Test error"
++    assert case.status == "resolved"
++    assert case.tags == ["python", "parsing"]
++
++
++def test_error_content_is_extracted_and_preserves_code_fences(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\n```text\nModuleNotFoundError: dotenv\n```\n\n## Solution\n\ninstall it\n",
++    )
++
++    assert parse_error_case(path).error == "```text\nModuleNotFoundError: dotenv\n```"
++
++
++def test_solution_content_is_extracted(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\n```bash\npip install python-dotenv\n```\n",
++    )
++
++    assert parse_error_case(path).solution == "```bash\npip install python-dotenv\n```"
++
++
++def test_missing_optional_sections_and_metadata_use_defaults(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++        frontmatter="id: err_minimal\ntitle: Minimal\nstatus: open\n",
++    )
++
++    case = parse_error_case(path)
++
++    assert case.context == ""
++    assert case.notes == ""
++    assert case.tags == []
++    assert case.language is None
++    assert case.frameworks == []
++
++
++@pytest.mark.parametrize("section", ["Error", "Solution"])
++def test_missing_required_section_raises_value_error(tmp_path: Path, section: str) -> None:
++    included_section = "Solution" if section == "Error" else "Error"
++    path = _write_case(tmp_path, f"## {included_section}\n\ncontent\n")
++
++    with pytest.raises(ValueError, match=rf"## {section}"):
++        parse_error_case(path)
++
++
++@pytest.mark.parametrize("field", ["id", "title", "status"])
++def test_missing_required_frontmatter_field_raises_value_error(
++    tmp_path: Path, field: str
++) -> None:
++    fields = {"id": "err_test", "title": "Test error", "status": "resolved"}
++    del fields[field]
++    frontmatter = "".join(f"{key}: {value}\n" for key, value in fields.items())
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++        frontmatter=frontmatter,
++    )
++
++    with pytest.raises(ValueError, match=field):
++        parse_error_case(path)
++
++
++def test_all_sample_error_files_parse() -> None:
++    cases = load_error_cases(ERRORS_DIR)
++
++    assert len(cases) == 3
++    assert {case.id for case in cases} == {
++        "err_20260526_001",
++        "err_20260526_002",
++        "err_20260526_003",
++    }
+
+codex
+The parser and tests are in place. One deliberate behavior is that any subsequent level-two heading terminates a named section, so unrelated appended sections are not folded into `Notes` or `Solution`; code fences inside each section remain unchanged. I’m running the targeted test command now.
+  ✓ Inspect existing model, sample Markdown format, and test/dependency context
+  ✓ Implement frontmatter and Markdown section parsing in debug_memory/parser.py
+  ✓ Add parser tests covering sample files, defaults, content extraction, and required field/section failures
+  → Run targeted pytest verification
+diff --git a/debug_memory/parser.py b/debug_memory/parser.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..be7a0e6d32b50f3cdec0d14aa644e951b907ae0e
+--- a/debug_memory/parser.py
++++ b/debug_memory/parser.py
+@@ -1 +1,85 @@
++from __future__ import annotations
++
++import re
++from pathlib import Path
++from typing import Any
++
++import yaml
++
++from .models import ErrorCase
++
++
++_FRONTMATTER_DELIMITER = "---"
++_SECTION_PATTERN = re.compile(
++    r"^##[ \t]+(Error|Context|Solution|Notes)[ \t]*\n(.*?)(?=^##[ \t]+|\Z)",
++    re.MULTILINE | re.DOTALL,
++)
++_REQUIRED_FIELDS = ("id", "title", "status")
++_REQUIRED_SECTIONS = ("Error", "Solution")
++
++
++def _split_frontmatter(text: str, path: Path) -> tuple[dict[str, Any], str]:
++    lines = text.splitlines()
++    if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
++        raise ValueError(f"{path}: YAML frontmatter must start with '---'")
++
++    try:
++        closing_delimiter = next(
++            index
++            for index, line in enumerate(lines[1:], start=1)
++            if line.strip() == _FRONTMATTER_DELIMITER
++        )
++    except StopIteration as exc:
++        raise ValueError(f"{path}: YAML frontmatter is missing closing '---'") from exc
++
++    frontmatter_text = "\n".join(lines[1:closing_delimiter])
++    try:
++        metadata = yaml.safe_load(frontmatter_text) or {}
++    except yaml.YAMLError as exc:
++        raise ValueError(f"{path}: invalid YAML frontmatter: {exc}") from exc
++
++    if not isinstance(metadata, dict):
++        raise ValueError(f"{path}: YAML frontmatter must be a mapping")
+ 
++    body = "\n".join(lines[closing_delimiter + 1 :])
++    return metadata, body
++
++
++def _extract_sections(body: str, path: Path) -> dict[str, str]:
++    sections = {
++        heading: content.strip()
++        for heading, content in _SECTION_PATTERN.findall(body)
++    }
++    for heading in _REQUIRED_SECTIONS:
++        if heading not in sections:
++            raise ValueError(f"{path}: required Markdown section '## {heading}' is missing")
++    return sections
++
++
++def parse_error_case(path: Path) -> ErrorCase:
++    """Parse one Markdown troubleshooting note into an ErrorCase."""
++    metadata, body = _split_frontmatter(path.read_text(encoding="utf-8"), path)
++
++    for field in _REQUIRED_FIELDS:
++        if field not in metadata or metadata[field] is None:
++            raise ValueError(f"{path}: required frontmatter field '{field}' is missing")
++
++    sections = _extract_sections(body, path)
++    return ErrorCase(
++        id=str(metadata["id"]),
++        title=str(metadata["title"]),
++        status=str(metadata["status"]),
++        tags=list(metadata.get("tags") or []),
++        language=metadata.get("language"),
++        frameworks=list(metadata.get("frameworks") or []),
++        error=sections["Error"],
++        context=sections.get("Context", ""),
++        solution=sections["Solution"],
++        notes=sections.get("Notes", ""),
++        path=path,
++    )
++
++
++def load_error_cases(errors_dir: Path) -> list[ErrorCase]:
++    """Parse all Markdown troubleshooting notes in an error memory directory."""
++    return [parse_error_case(path) for path in sorted(errors_dir.glob("*.md"))]
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..dc1a5404d1350413f0c4c10fd0743347afbda0cc
+--- /dev/null
++++ b/tests/test_parser.py
+@@ -0,0 +1,107 @@
++from pathlib import Path
++
++import pytest
++
++from debug_memory.parser import load_error_cases, parse_error_case
++
++
++ERRORS_DIR = Path(__file__).parent.parent / "memory" / "errors"
++
++
++def _write_case(tmp_path: Path, body: str, frontmatter: str | None = None) -> Path:
++    metadata = frontmatter or """\
++id: err_test
++title: Test error
++status: resolved
++tags:
++  - python
++  - parsing
++"""
++    path = tmp_path / "case.md"
++    path.write_text(f"---\n{metadata}---\n\n{body}", encoding="utf-8")
++    return path
++
++
++def test_frontmatter_is_parsed(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++    )
++
++    case = parse_error_case(path)
++
++    assert case.id == "err_test"
++    assert case.title == "Test error"
++    assert case.status == "resolved"
++    assert case.tags == ["python", "parsing"]
++
++
++def test_error_content_is_extracted_and_preserves_code_fences(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\n```text\nModuleNotFoundError: dotenv\n```\n\n## Solution\n\ninstall it\n",
++    )
++
++    assert parse_error_case(path).error == "```text\nModuleNotFoundError: dotenv\n```"
++
++
++def test_solution_content_is_extracted(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\n```bash\npip install python-dotenv\n```\n",
++    )
++
++    assert parse_error_case(path).solution == "```bash\npip install python-dotenv\n```"
++
++
++def test_missing_optional_sections_and_metadata_use_defaults(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++        frontmatter="id: err_minimal\ntitle: Minimal\nstatus: open\n",
++    )
++
++    case = parse_error_case(path)
++
++    assert case.context == ""
++    assert case.notes == ""
++    assert case.tags == []
++    assert case.language is None
++    assert case.frameworks == []
++
++
++@pytest.mark.parametrize("section", ["Error", "Solution"])
++def test_missing_required_section_raises_value_error(tmp_path: Path, section: str) -> None:
++    included_section = "Solution" if section == "Error" else "Error"
++    path = _write_case(tmp_path, f"## {included_section}\n\ncontent\n")
++
++    with pytest.raises(ValueError, match=rf"## {section}"):
++        parse_error_case(path)
++
++
++@pytest.mark.parametrize("field", ["id", "title", "status"])
++def test_missing_required_frontmatter_field_raises_value_error(
++    tmp_path: Path, field: str
++) -> None:
++    fields = {"id": "err_test", "title": "Test error", "status": "resolved"}
++    del fields[field]
++    frontmatter = "".join(f"{key}: {value}\n" for key, value in fields.items())
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++        frontmatter=frontmatter,
++    )
++
++    with pytest.raises(ValueError, match=field):
++        parse_error_case(path)
++
++
++def test_all_sample_error_files_parse() -> None:
++    cases = load_error_cases(ERRORS_DIR)
++
++    assert len(cases) == 3
++    assert {case.id for case in cases} == {
++        "err_20260526_001",
++        "err_20260526_002",
++        "err_20260526_003",
++    }
+
+exec
+/bin/zsh -lc 'git diff --stat -- debug_memory/parser.py tests/test_parser.py && git diff --check -- debug_memory/parser.py tests/test_parser.py' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+ debug_memory/parser.py | 84 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 84 insertions(+)
+
+exec
+/bin/zsh -lc 'source .venv/bin/activate && codex-distill -p "Report whether pytest passed. Return PASS or FAIL, the number of tests passed/failed, and any failing test names with exact error messages if present." -- pytest tests/test_parser.py -v' in /Users/uenoyuuta/Debug_Memory
+diff --git a/debug_memory/parser.py b/debug_memory/parser.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..be7a0e6d32b50f3cdec0d14aa644e951b907ae0e
+--- a/debug_memory/parser.py
++++ b/debug_memory/parser.py
+@@ -1 +1,85 @@
++from __future__ import annotations
++
++import re
++from pathlib import Path
++from typing import Any
++
++import yaml
++
++from .models import ErrorCase
++
++
++_FRONTMATTER_DELIMITER = "---"
++_SECTION_PATTERN = re.compile(
++    r"^##[ \t]+(Error|Context|Solution|Notes)[ \t]*\n(.*?)(?=^##[ \t]+|\Z)",
++    re.MULTILINE | re.DOTALL,
++)
++_REQUIRED_FIELDS = ("id", "title", "status")
++_REQUIRED_SECTIONS = ("Error", "Solution")
++
++
++def _split_frontmatter(text: str, path: Path) -> tuple[dict[str, Any], str]:
++    lines = text.splitlines()
++    if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
++        raise ValueError(f"{path}: YAML frontmatter must start with '---'")
++
++    try:
++        closing_delimiter = next(
++            index
++            for index, line in enumerate(lines[1:], start=1)
++            if line.strip() == _FRONTMATTER_DELIMITER
++        )
++    except StopIteration as exc:
++        raise ValueError(f"{path}: YAML frontmatter is missing closing '---'") from exc
++
++    frontmatter_text = "\n".join(lines[1:closing_delimiter])
++    try:
++        metadata = yaml.safe_load(frontmatter_text) or {}
++    except yaml.YAMLError as exc:
++        raise ValueError(f"{path}: invalid YAML frontmatter: {exc}") from exc
++
++    if not isinstance(metadata, dict):
++        raise ValueError(f"{path}: YAML frontmatter must be a mapping")
+ 
++    body = "\n".join(lines[closing_delimiter + 1 :])
++    return metadata, body
++
++
++def _extract_sections(body: str, path: Path) -> dict[str, str]:
++    sections = {
++        heading: content.strip()
++        for heading, content in _SECTION_PATTERN.findall(body)
++    }
++    for heading in _REQUIRED_SECTIONS:
++        if heading not in sections:
++            raise ValueError(f"{path}: required Markdown section '## {heading}' is missing")
++    return sections
++
++
++def parse_error_case(path: Path) -> ErrorCase:
++    """Parse one Markdown troubleshooting note into an ErrorCase."""
++    metadata, body = _split_frontmatter(path.read_text(encoding="utf-8"), path)
++
++    for field in _REQUIRED_FIELDS:
++        if field not in metadata or metadata[field] is None:
++            raise ValueError(f"{path}: required frontmatter field '{field}' is missing")
++
++    sections = _extract_sections(body, path)
++    return ErrorCase(
++        id=str(metadata["id"]),
++        title=str(metadata["title"]),
++        status=str(metadata["status"]),
++        tags=list(metadata.get("tags") or []),
++        language=metadata.get("language"),
++        frameworks=list(metadata.get("frameworks") or []),
++        error=sections["Error"],
++        context=sections.get("Context", ""),
++        solution=sections["Solution"],
++        notes=sections.get("Notes", ""),
++        path=path,
++    )
++
++
++def load_error_cases(errors_dir: Path) -> list[ErrorCase]:
++    """Parse all Markdown troubleshooting notes in an error memory directory."""
++    return [parse_error_case(path) for path in sorted(errors_dir.glob("*.md"))]
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..dc1a5404d1350413f0c4c10fd0743347afbda0cc
+--- /dev/null
++++ b/tests/test_parser.py
+@@ -0,0 +1,107 @@
++from pathlib import Path
++
++import pytest
++
++from debug_memory.parser import load_error_cases, parse_error_case
++
++
++ERRORS_DIR = Path(__file__).parent.parent / "memory" / "errors"
++
++
++def _write_case(tmp_path: Path, body: str, frontmatter: str | None = None) -> Path:
++    metadata = frontmatter or """\
++id: err_test
++title: Test error
++status: resolved
++tags:
++  - python
++  - parsing
++"""
++    path = tmp_path / "case.md"
++    path.write_text(f"---\n{metadata}---\n\n{body}", encoding="utf-8")
++    return path
++
++
++def test_frontmatter_is_parsed(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++    )
++
++    case = parse_error_case(path)
++
++    assert case.id == "err_test"
++    assert case.title == "Test error"
++    assert case.status == "resolved"
++    assert case.tags == ["python", "parsing"]
++
++
++def test_error_content_is_extracted_and_preserves_code_fences(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\n```text\nModuleNotFoundError: dotenv\n```\n\n## Solution\n\ninstall it\n",
++    )
++
++    assert parse_error_case(path).error == "```text\nModuleNotFoundError: dotenv\n```"
++
++
++def test_solution_content_is_extracted(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\n```bash\npip install python-dotenv\n```\n",
++    )
++
++    assert parse_error_case(path).solution == "```bash\npip install python-dotenv\n```"
++
++
++def test_missing_optional_sections_and_metadata_use_defaults(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++        frontmatter="id: err_minimal\ntitle: Minimal\nstatus: open\n",
++    )
++
++    case = parse_error_case(path)
++
++    assert case.context == ""
++    assert case.notes == ""
++    assert case.tags == []
++    assert case.language is None
++    assert case.frameworks == []
++
++
++@pytest.mark.parametrize("section", ["Error", "Solution"])
++def test_missing_required_section_raises_value_error(tmp_path: Path, section: str) -> None:
++    included_section = "Solution" if section == "Error" else "Error"
++    path = _write_case(tmp_path, f"## {included_section}\n\ncontent\n")
++
++    with pytest.raises(ValueError, match=rf"## {section}"):
++        parse_error_case(path)
++
++
++@pytest.mark.parametrize("field", ["id", "title", "status"])
++def test_missing_required_frontmatter_field_raises_value_error(
++    tmp_path: Path, field: str
++) -> None:
++    fields = {"id": "err_test", "title": "Test error", "status": "resolved"}
++    del fields[field]
++    frontmatter = "".join(f"{key}: {value}\n" for key, value in fields.items())
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++        frontmatter=frontmatter,
++    )
++
++    with pytest.raises(ValueError, match=field):
++        parse_error_case(path)
++
++
++def test_all_sample_error_files_parse() -> None:
++    cases = load_error_cases(ERRORS_DIR)
++
++    assert len(cases) == 3
++    assert {case.id for case in cases} == {
++        "err_20260526_001",
++        "err_20260526_002",
++        "err_20260526_003",
++    }
+
+ succeeded in 889ms:
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-9.0.3, pluggy-1.6.0 -- /Users/uenoyuuta/Debug_Memory/.venv/bin/python3.13
+cachedir: .pytest_cache
+rootdir: /Users/uenoyuuta/Debug_Memory
+configfile: pyproject.toml
+collecting ... collected 10 items
+
+tests/test_parser.py::test_frontmatter_is_parsed PASSED                  [ 10%]
+tests/test_parser.py::test_error_content_is_extracted_and_preserves_code_fences PASSED [ 20%]
+tests/test_parser.py::test_solution_content_is_extracted PASSED          [ 30%]
+tests/test_parser.py::test_missing_optional_sections_and_metadata_use_defaults PASSED [ 40%]
+tests/test_parser.py::test_missing_required_section_raises_value_error[Error] PASSED [ 50%]
+tests/test_parser.py::test_missing_required_section_raises_value_error[Solution] PASSED [ 60%]
+tests/test_parser.py::test_missing_required_frontmatter_field_raises_value_error[id] PASSED [ 70%]
+tests/test_parser.py::test_missing_required_frontmatter_field_raises_value_error[title] PASSED [ 80%]
+tests/test_parser.py::test_missing_required_frontmatter_field_raises_value_error[status] PASSED [ 90%]
+tests/test_parser.py::test_all_sample_error_files_parse PASSED           [100%]
+
+============================== 10 passed in 0.22s ==============================
+
+codex
+The targeted suite passes: 10 tests collected and passed, including direct parsing of all three real memory files. I’m doing one final scope/status check so the report lists only my two allowed-file changes and doesn’t misattribute the existing untracked report artifacts.
+  ✓ Inspect existing model, sample Markdown format, and test/dependency context
+  ✓ Implement frontmatter and Markdown section parsing in debug_memory/parser.py
+  ✓ Add parser tests covering sample files, defaults, content extraction, and required field/section failures
+  ✓ Run targeted pytest verification
+diff --git a/debug_memory/parser.py b/debug_memory/parser.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..be7a0e6d32b50f3cdec0d14aa644e951b907ae0e
+--- a/debug_memory/parser.py
++++ b/debug_memory/parser.py
+@@ -1 +1,85 @@
++from __future__ import annotations
++
++import re
++from pathlib import Path
++from typing import Any
++
++import yaml
++
++from .models import ErrorCase
++
++
++_FRONTMATTER_DELIMITER = "---"
++_SECTION_PATTERN = re.compile(
++    r"^##[ \t]+(Error|Context|Solution|Notes)[ \t]*\n(.*?)(?=^##[ \t]+|\Z)",
++    re.MULTILINE | re.DOTALL,
++)
++_REQUIRED_FIELDS = ("id", "title", "status")
++_REQUIRED_SECTIONS = ("Error", "Solution")
++
++
++def _split_frontmatter(text: str, path: Path) -> tuple[dict[str, Any], str]:
++    lines = text.splitlines()
++    if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
++        raise ValueError(f"{path}: YAML frontmatter must start with '---'")
++
++    try:
++        closing_delimiter = next(
++            index
++            for index, line in enumerate(lines[1:], start=1)
++            if line.strip() == _FRONTMATTER_DELIMITER
++        )
++    except StopIteration as exc:
++        raise ValueError(f"{path}: YAML frontmatter is missing closing '---'") from exc
++
++    frontmatter_text = "\n".join(lines[1:closing_delimiter])
++    try:
++        metadata = yaml.safe_load(frontmatter_text) or {}
++    except yaml.YAMLError as exc:
++        raise ValueError(f"{path}: invalid YAML frontmatter: {exc}") from exc
++
++    if not isinstance(metadata, dict):
++        raise ValueError(f"{path}: YAML frontmatter must be a mapping")
+ 
++    body = "\n".join(lines[closing_delimiter + 1 :])
++    return metadata, body
++
++
++def _extract_sections(body: str, path: Path) -> dict[str, str]:
++    sections = {
++        heading: content.strip()
++        for heading, content in _SECTION_PATTERN.findall(body)
++    }
++    for heading in _REQUIRED_SECTIONS:
++        if heading not in sections:
++            raise ValueError(f"{path}: required Markdown section '## {heading}' is missing")
++    return sections
++
++
++def parse_error_case(path: Path) -> ErrorCase:
++    """Parse one Markdown troubleshooting note into an ErrorCase."""
++    metadata, body = _split_frontmatter(path.read_text(encoding="utf-8"), path)
++
++    for field in _REQUIRED_FIELDS:
++        if field not in metadata or metadata[field] is None:
++            raise ValueError(f"{path}: required frontmatter field '{field}' is missing")
++
++    sections = _extract_sections(body, path)
++    return ErrorCase(
++        id=str(metadata["id"]),
++        title=str(metadata["title"]),
++        status=str(metadata["status"]),
++        tags=list(metadata.get("tags") or []),
++        language=metadata.get("language"),
++        frameworks=list(metadata.get("frameworks") or []),
++        error=sections["Error"],
++        context=sections.get("Context", ""),
++        solution=sections["Solution"],
++        notes=sections.get("Notes", ""),
++        path=path,
++    )
++
++
++def load_error_cases(errors_dir: Path) -> list[ErrorCase]:
++    """Parse all Markdown troubleshooting notes in an error memory directory."""
++    return [parse_error_case(path) for path in sorted(errors_dir.glob("*.md"))]
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..dc1a5404d1350413f0c4c10fd0743347afbda0cc
+--- /dev/null
++++ b/tests/test_parser.py
+@@ -0,0 +1,107 @@
++from pathlib import Path
++
++import pytest
++
++from debug_memory.parser import load_error_cases, parse_error_case
++
++
++ERRORS_DIR = Path(__file__).parent.parent / "memory" / "errors"
++
++
++def _write_case(tmp_path: Path, body: str, frontmatter: str | None = None) -> Path:
++    metadata = frontmatter or """\
++id: err_test
++title: Test error
++status: resolved
++tags:
++  - python
++  - parsing
++"""
++    path = tmp_path / "case.md"
++    path.write_text(f"---\n{metadata}---\n\n{body}", encoding="utf-8")
++    return path
++
++
++def test_frontmatter_is_parsed(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++    )
++
++    case = parse_error_case(path)
++
++    assert case.id == "err_test"
++    assert case.title == "Test error"
++    assert case.status == "resolved"
++    assert case.tags == ["python", "parsing"]
++
++
++def test_error_content_is_extracted_and_preserves_code_fences(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\n```text\nModuleNotFoundError: dotenv\n```\n\n## Solution\n\ninstall it\n",
++    )
++
++    assert parse_error_case(path).error == "```text\nModuleNotFoundError: dotenv\n```"
++
++
++def test_solution_content_is_extracted(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\n```bash\npip install python-dotenv\n```\n",
++    )
++
++    assert parse_error_case(path).solution == "```bash\npip install python-dotenv\n```"
++
++
++def test_missing_optional_sections_and_metadata_use_defaults(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++        frontmatter="id: err_minimal\ntitle: Minimal\nstatus: open\n",
++    )
++
++    case = parse_error_case(path)
++
++    assert case.context == ""
++    assert case.notes == ""
++    assert case.tags == []
++    assert case.language is None
++    assert case.frameworks == []
++
++
++@pytest.mark.parametrize("section", ["Error", "Solution"])
++def test_missing_required_section_raises_value_error(tmp_path: Path, section: str) -> None:
++    included_section = "Solution" if section == "Error" else "Error"
++    path = _write_case(tmp_path, f"## {included_section}\n\ncontent\n")
++
++    with pytest.raises(ValueError, match=rf"## {section}"):
++        parse_error_case(path)
++
++
++@pytest.mark.parametrize("field", ["id", "title", "status"])
++def test_missing_required_frontmatter_field_raises_value_error(
++    tmp_path: Path, field: str
++) -> None:
++    fields = {"id": "err_test", "title": "Test error", "status": "resolved"}
++    del fields[field]
++    frontmatter = "".join(f"{key}: {value}\n" for key, value in fields.items())
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++        frontmatter=frontmatter,
++    )
++
++    with pytest.raises(ValueError, match=field):
++        parse_error_case(path)
++
++
++def test_all_sample_error_files_parse() -> None:
++    cases = load_error_cases(ERRORS_DIR)
++
++    assert len(cases) == 3
++    assert {case.id for case in cases} == {
++        "err_20260526_001",
++        "err_20260526_002",
++        "err_20260526_003",
++    }
+
+ERROR: Reconnecting... 2/5
+exec
+/bin/zsh -lc 'git status --short' in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+ M debug_memory/parser.py
+?? reports/yakin/yakin-20260526-234017/handoffs/T04-to-codex.md
+?? reports/yakin/yakin-20260526-234017/logs/T04.stderr.log
+?? reports/yakin/yakin-20260526-234017/logs/T04.stdout.log
+?? reports/yakin/yakin-20260526-234017/run-task.sh
+?? tests/test_parser.py
+
+exec
+/bin/zsh -lc "git status --short -- debug_memory/parser.py tests/test_parser.py tests/fixtures tests/conftest.py memory/errors debug_memory/models.py; nl -ba debug_memory/parser.py | sed -n '1,180p'; nl -ba tests/test_parser.py | sed -n '1,220p'" in /Users/uenoyuuta/Debug_Memory
+ succeeded in 0ms:
+ M debug_memory/parser.py
+?? tests/test_parser.py
+     1	from __future__ import annotations
+     2	
+     3	import re
+     4	from pathlib import Path
+     5	from typing import Any
+     6	
+     7	import yaml
+     8	
+     9	from .models import ErrorCase
+    10	
+    11	
+    12	_FRONTMATTER_DELIMITER = "---"
+    13	_SECTION_PATTERN = re.compile(
+    14	    r"^##[ \t]+(Error|Context|Solution|Notes)[ \t]*\n(.*?)(?=^##[ \t]+|\Z)",
+    15	    re.MULTILINE | re.DOTALL,
+    16	)
+    17	_REQUIRED_FIELDS = ("id", "title", "status")
+    18	_REQUIRED_SECTIONS = ("Error", "Solution")
+    19	
+    20	
+    21	def _split_frontmatter(text: str, path: Path) -> tuple[dict[str, Any], str]:
+    22	    lines = text.splitlines()
+    23	    if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
+    24	        raise ValueError(f"{path}: YAML frontmatter must start with '---'")
+    25	
+    26	    try:
+    27	        closing_delimiter = next(
+    28	            index
+    29	            for index, line in enumerate(lines[1:], start=1)
+    30	            if line.strip() == _FRONTMATTER_DELIMITER
+    31	        )
+    32	    except StopIteration as exc:
+    33	        raise ValueError(f"{path}: YAML frontmatter is missing closing '---'") from exc
+    34	
+    35	    frontmatter_text = "\n".join(lines[1:closing_delimiter])
+    36	    try:
+    37	        metadata = yaml.safe_load(frontmatter_text) or {}
+    38	    except yaml.YAMLError as exc:
+    39	        raise ValueError(f"{path}: invalid YAML frontmatter: {exc}") from exc
+    40	
+    41	    if not isinstance(metadata, dict):
+    42	        raise ValueError(f"{path}: YAML frontmatter must be a mapping")
+    43	
+    44	    body = "\n".join(lines[closing_delimiter + 1 :])
+    45	    return metadata, body
+    46	
+    47	
+    48	def _extract_sections(body: str, path: Path) -> dict[str, str]:
+    49	    sections = {
+    50	        heading: content.strip()
+    51	        for heading, content in _SECTION_PATTERN.findall(body)
+    52	    }
+    53	    for heading in _REQUIRED_SECTIONS:
+    54	        if heading not in sections:
+    55	            raise ValueError(f"{path}: required Markdown section '## {heading}' is missing")
+    56	    return sections
+    57	
+    58	
+    59	def parse_error_case(path: Path) -> ErrorCase:
+    60	    """Parse one Markdown troubleshooting note into an ErrorCase."""
+    61	    metadata, body = _split_frontmatter(path.read_text(encoding="utf-8"), path)
+    62	
+    63	    for field in _REQUIRED_FIELDS:
+    64	        if field not in metadata or metadata[field] is None:
+    65	            raise ValueError(f"{path}: required frontmatter field '{field}' is missing")
+    66	
+    67	    sections = _extract_sections(body, path)
+    68	    return ErrorCase(
+    69	        id=str(metadata["id"]),
+    70	        title=str(metadata["title"]),
+    71	        status=str(metadata["status"]),
+    72	        tags=list(metadata.get("tags") or []),
+    73	        language=metadata.get("language"),
+    74	        frameworks=list(metadata.get("frameworks") or []),
+    75	        error=sections["Error"],
+    76	        context=sections.get("Context", ""),
+    77	        solution=sections["Solution"],
+    78	        notes=sections.get("Notes", ""),
+    79	        path=path,
+    80	    )
+    81	
+    82	
+    83	def load_error_cases(errors_dir: Path) -> list[ErrorCase]:
+    84	    """Parse all Markdown troubleshooting notes in an error memory directory."""
+    85	    return [parse_error_case(path) for path in sorted(errors_dir.glob("*.md"))]
+     1	from pathlib import Path
+     2	
+     3	import pytest
+     4	
+     5	from debug_memory.parser import load_error_cases, parse_error_case
+     6	
+     7	
+     8	ERRORS_DIR = Path(__file__).parent.parent / "memory" / "errors"
+     9	
+    10	
+    11	def _write_case(tmp_path: Path, body: str, frontmatter: str | None = None) -> Path:
+    12	    metadata = frontmatter or """\
+    13	id: err_test
+    14	title: Test error
+    15	status: resolved
+    16	tags:
+    17	  - python
+    18	  - parsing
+    19	"""
+    20	    path = tmp_path / "case.md"
+    21	    path.write_text(f"---\n{metadata}---\n\n{body}", encoding="utf-8")
+    22	    return path
+    23	
+    24	
+    25	def test_frontmatter_is_parsed(tmp_path: Path) -> None:
+    26	    path = _write_case(
+    27	        tmp_path,
+    28	        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
+    29	    )
+    30	
+    31	    case = parse_error_case(path)
+    32	
+    33	    assert case.id == "err_test"
+    34	    assert case.title == "Test error"
+    35	    assert case.status == "resolved"
+    36	    assert case.tags == ["python", "parsing"]
+    37	
+    38	
+    39	def test_error_content_is_extracted_and_preserves_code_fences(tmp_path: Path) -> None:
+    40	    path = _write_case(
+    41	        tmp_path,
+    42	        "## Error\n\n```text\nModuleNotFoundError: dotenv\n```\n\n## Solution\n\ninstall it\n",
+    43	    )
+    44	
+    45	    assert parse_error_case(path).error == "```text\nModuleNotFoundError: dotenv\n```"
+    46	
+    47	
+    48	def test_solution_content_is_extracted(tmp_path: Path) -> None:
+    49	    path = _write_case(
+    50	        tmp_path,
+    51	        "## Error\n\nbroken\n\n## Solution\n\n```bash\npip install python-dotenv\n```\n",
+    52	    )
+    53	
+    54	    assert parse_error_case(path).solution == "```bash\npip install python-dotenv\n```"
+    55	
+    56	
+    57	def test_missing_optional_sections_and_metadata_use_defaults(tmp_path: Path) -> None:
+    58	    path = _write_case(
+    59	        tmp_path,
+    60	        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
+    61	        frontmatter="id: err_minimal\ntitle: Minimal\nstatus: open\n",
+    62	    )
+    63	
+    64	    case = parse_error_case(path)
+    65	
+    66	    assert case.context == ""
+    67	    assert case.notes == ""
+    68	    assert case.tags == []
+    69	    assert case.language is None
+    70	    assert case.frameworks == []
+    71	
+    72	
+    73	@pytest.mark.parametrize("section", ["Error", "Solution"])
+    74	def test_missing_required_section_raises_value_error(tmp_path: Path, section: str) -> None:
+    75	    included_section = "Solution" if section == "Error" else "Error"
+    76	    path = _write_case(tmp_path, f"## {included_section}\n\ncontent\n")
+    77	
+    78	    with pytest.raises(ValueError, match=rf"## {section}"):
+    79	        parse_error_case(path)
+    80	
+    81	
+    82	@pytest.mark.parametrize("field", ["id", "title", "status"])
+    83	def test_missing_required_frontmatter_field_raises_value_error(
+    84	    tmp_path: Path, field: str
+    85	) -> None:
+    86	    fields = {"id": "err_test", "title": "Test error", "status": "resolved"}
+    87	    del fields[field]
+    88	    frontmatter = "".join(f"{key}: {value}\n" for key, value in fields.items())
+    89	    path = _write_case(
+    90	        tmp_path,
+    91	        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
+    92	        frontmatter=frontmatter,
+    93	    )
+    94	
+    95	    with pytest.raises(ValueError, match=field):
+    96	        parse_error_case(path)
+    97	
+    98	
+    99	def test_all_sample_error_files_parse() -> None:
+   100	    cases = load_error_cases(ERRORS_DIR)
+   101	
+   102	    assert len(cases) == 3
+   103	    assert {case.id for case in cases} == {
+   104	        "err_20260526_001",
+   105	        "err_20260526_002",
+   106	        "err_20260526_003",
+   107	    }
+
+diff --git a/debug_memory/parser.py b/debug_memory/parser.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..be7a0e6d32b50f3cdec0d14aa644e951b907ae0e
+--- a/debug_memory/parser.py
++++ b/debug_memory/parser.py
+@@ -1 +1,85 @@
++from __future__ import annotations
++
++import re
++from pathlib import Path
++from typing import Any
++
++import yaml
++
++from .models import ErrorCase
++
++
++_FRONTMATTER_DELIMITER = "---"
++_SECTION_PATTERN = re.compile(
++    r"^##[ \t]+(Error|Context|Solution|Notes)[ \t]*\n(.*?)(?=^##[ \t]+|\Z)",
++    re.MULTILINE | re.DOTALL,
++)
++_REQUIRED_FIELDS = ("id", "title", "status")
++_REQUIRED_SECTIONS = ("Error", "Solution")
++
++
++def _split_frontmatter(text: str, path: Path) -> tuple[dict[str, Any], str]:
++    lines = text.splitlines()
++    if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
++        raise ValueError(f"{path}: YAML frontmatter must start with '---'")
++
++    try:
++        closing_delimiter = next(
++            index
++            for index, line in enumerate(lines[1:], start=1)
++            if line.strip() == _FRONTMATTER_DELIMITER
++        )
++    except StopIteration as exc:
++        raise ValueError(f"{path}: YAML frontmatter is missing closing '---'") from exc
++
++    frontmatter_text = "\n".join(lines[1:closing_delimiter])
++    try:
++        metadata = yaml.safe_load(frontmatter_text) or {}
++    except yaml.YAMLError as exc:
++        raise ValueError(f"{path}: invalid YAML frontmatter: {exc}") from exc
++
++    if not isinstance(metadata, dict):
++        raise ValueError(f"{path}: YAML frontmatter must be a mapping")
+ 
++    body = "\n".join(lines[closing_delimiter + 1 :])
++    return metadata, body
++
++
++def _extract_sections(body: str, path: Path) -> dict[str, str]:
++    sections = {
++        heading: content.strip()
++        for heading, content in _SECTION_PATTERN.findall(body)
++    }
++    for heading in _REQUIRED_SECTIONS:
++        if heading not in sections:
++            raise ValueError(f"{path}: required Markdown section '## {heading}' is missing")
++    return sections
++
++
++def parse_error_case(path: Path) -> ErrorCase:
++    """Parse one Markdown troubleshooting note into an ErrorCase."""
++    metadata, body = _split_frontmatter(path.read_text(encoding="utf-8"), path)
++
++    for field in _REQUIRED_FIELDS:
++        if field not in metadata or metadata[field] is None:
++            raise ValueError(f"{path}: required frontmatter field '{field}' is missing")
++
++    sections = _extract_sections(body, path)
++    return ErrorCase(
++        id=str(metadata["id"]),
++        title=str(metadata["title"]),
++        status=str(metadata["status"]),
++        tags=list(metadata.get("tags") or []),
++        language=metadata.get("language"),
++        frameworks=list(metadata.get("frameworks") or []),
++        error=sections["Error"],
++        context=sections.get("Context", ""),
++        solution=sections["Solution"],
++        notes=sections.get("Notes", ""),
++        path=path,
++    )
++
++
++def load_error_cases(errors_dir: Path) -> list[ErrorCase]:
++    """Parse all Markdown troubleshooting notes in an error memory directory."""
++    return [parse_error_case(path) for path in sorted(errors_dir.glob("*.md"))]
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..dc1a5404d1350413f0c4c10fd0743347afbda0cc
+--- /dev/null
++++ b/tests/test_parser.py
+@@ -0,0 +1,107 @@
++from pathlib import Path
++
++import pytest
++
++from debug_memory.parser import load_error_cases, parse_error_case
++
++
++ERRORS_DIR = Path(__file__).parent.parent / "memory" / "errors"
++
++
++def _write_case(tmp_path: Path, body: str, frontmatter: str | None = None) -> Path:
++    metadata = frontmatter or """\
++id: err_test
++title: Test error
++status: resolved
++tags:
++  - python
++  - parsing
++"""
++    path = tmp_path / "case.md"
++    path.write_text(f"---\n{metadata}---\n\n{body}", encoding="utf-8")
++    return path
++
++
++def test_frontmatter_is_parsed(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++    )
++
++    case = parse_error_case(path)
++
++    assert case.id == "err_test"
++    assert case.title == "Test error"
++    assert case.status == "resolved"
++    assert case.tags == ["python", "parsing"]
++
++
++def test_error_content_is_extracted_and_preserves_code_fences(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\n```text\nModuleNotFoundError: dotenv\n```\n\n## Solution\n\ninstall it\n",
++    )
++
++    assert parse_error_case(path).error == "```text\nModuleNotFoundError: dotenv\n```"
++
++
++def test_solution_content_is_extracted(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\n```bash\npip install python-dotenv\n```\n",
++    )
++
++    assert parse_error_case(path).solution == "```bash\npip install python-dotenv\n```"
++
++
++def test_missing_optional_sections_and_metadata_use_defaults(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++        frontmatter="id: err_minimal\ntitle: Minimal\nstatus: open\n",
++    )
++
++    case = parse_error_case(path)
++
++    assert case.context == ""
++    assert case.notes == ""
++    assert case.tags == []
++    assert case.language is None
++    assert case.frameworks == []
++
++
++@pytest.mark.parametrize("section", ["Error", "Solution"])
++def test_missing_required_section_raises_value_error(tmp_path: Path, section: str) -> None:
++    included_section = "Solution" if section == "Error" else "Error"
++    path = _write_case(tmp_path, f"## {included_section}\n\ncontent\n")
++
++    with pytest.raises(ValueError, match=rf"## {section}"):
++        parse_error_case(path)
++
++
++@pytest.mark.parametrize("field", ["id", "title", "status"])
++def test_missing_required_frontmatter_field_raises_value_error(
++    tmp_path: Path, field: str
++) -> None:
++    fields = {"id": "err_test", "title": "Test error", "status": "resolved"}
++    del fields[field]
++    frontmatter = "".join(f"{key}: {value}\n" for key, value in fields.items())
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++        frontmatter=frontmatter,
++    )
++
++    with pytest.raises(ValueError, match=field):
++        parse_error_case(path)
++
++
++def test_all_sample_error_files_parse() -> None:
++    cases = load_error_cases(ERRORS_DIR)
++
++    assert len(cases) == 3
++    assert {case.id for case in cases} == {
++        "err_20260526_001",
++        "err_20260526_002",
++        "err_20260526_003",
++    }
+
+codex
+{
+  "status": "completed",
+  "changed_files": [
+    "debug_memory/parser.py",
+    "tests/test_parser.py"
+  ],
+  "summary": "Implemented YAML frontmatter and Markdown section parsing into ErrorCase, deterministic loading of Markdown cases, optional defaults, and clear validation errors for missing required fields or sections. Added tests for metadata parsing, Error/Solution extraction, code fence preservation, optional defaults, validation failures, and parsing all three sample files. Existing unrelated untracked report artifacts were left untouched.",
+  "tests_run": [
+    "pytest tests/test_parser.py -v: 10 passed"
+  ]
+}
+diff --git a/debug_memory/parser.py b/debug_memory/parser.py
+index 8b137891791fe96927ad78e64b0aad7bded08bdc..be7a0e6d32b50f3cdec0d14aa644e951b907ae0e
+--- a/debug_memory/parser.py
++++ b/debug_memory/parser.py
+@@ -1 +1,85 @@
++from __future__ import annotations
++
++import re
++from pathlib import Path
++from typing import Any
++
++import yaml
++
++from .models import ErrorCase
++
++
++_FRONTMATTER_DELIMITER = "---"
++_SECTION_PATTERN = re.compile(
++    r"^##[ \t]+(Error|Context|Solution|Notes)[ \t]*\n(.*?)(?=^##[ \t]+|\Z)",
++    re.MULTILINE | re.DOTALL,
++)
++_REQUIRED_FIELDS = ("id", "title", "status")
++_REQUIRED_SECTIONS = ("Error", "Solution")
++
++
++def _split_frontmatter(text: str, path: Path) -> tuple[dict[str, Any], str]:
++    lines = text.splitlines()
++    if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
++        raise ValueError(f"{path}: YAML frontmatter must start with '---'")
++
++    try:
++        closing_delimiter = next(
++            index
++            for index, line in enumerate(lines[1:], start=1)
++            if line.strip() == _FRONTMATTER_DELIMITER
++        )
++    except StopIteration as exc:
++        raise ValueError(f"{path}: YAML frontmatter is missing closing '---'") from exc
++
++    frontmatter_text = "\n".join(lines[1:closing_delimiter])
++    try:
++        metadata = yaml.safe_load(frontmatter_text) or {}
++    except yaml.YAMLError as exc:
++        raise ValueError(f"{path}: invalid YAML frontmatter: {exc}") from exc
++
++    if not isinstance(metadata, dict):
++        raise ValueError(f"{path}: YAML frontmatter must be a mapping")
+ 
++    body = "\n".join(lines[closing_delimiter + 1 :])
++    return metadata, body
++
++
++def _extract_sections(body: str, path: Path) -> dict[str, str]:
++    sections = {
++        heading: content.strip()
++        for heading, content in _SECTION_PATTERN.findall(body)
++    }
++    for heading in _REQUIRED_SECTIONS:
++        if heading not in sections:
++            raise ValueError(f"{path}: required Markdown section '## {heading}' is missing")
++    return sections
++
++
++def parse_error_case(path: Path) -> ErrorCase:
++    """Parse one Markdown troubleshooting note into an ErrorCase."""
++    metadata, body = _split_frontmatter(path.read_text(encoding="utf-8"), path)
++
++    for field in _REQUIRED_FIELDS:
++        if field not in metadata or metadata[field] is None:
++            raise ValueError(f"{path}: required frontmatter field '{field}' is missing")
++
++    sections = _extract_sections(body, path)
++    return ErrorCase(
++        id=str(metadata["id"]),
++        title=str(metadata["title"]),
++        status=str(metadata["status"]),
++        tags=list(metadata.get("tags") or []),
++        language=metadata.get("language"),
++        frameworks=list(metadata.get("frameworks") or []),
++        error=sections["Error"],
++        context=sections.get("Context", ""),
++        solution=sections["Solution"],
++        notes=sections.get("Notes", ""),
++        path=path,
++    )
++
++
++def load_error_cases(errors_dir: Path) -> list[ErrorCase]:
++    """Parse all Markdown troubleshooting notes in an error memory directory."""
++    return [parse_error_case(path) for path in sorted(errors_dir.glob("*.md"))]
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..dc1a5404d1350413f0c4c10fd0743347afbda0cc
+--- /dev/null
++++ b/tests/test_parser.py
+@@ -0,0 +1,107 @@
++from pathlib import Path
++
++import pytest
++
++from debug_memory.parser import load_error_cases, parse_error_case
++
++
++ERRORS_DIR = Path(__file__).parent.parent / "memory" / "errors"
++
++
++def _write_case(tmp_path: Path, body: str, frontmatter: str | None = None) -> Path:
++    metadata = frontmatter or """\
++id: err_test
++title: Test error
++status: resolved
++tags:
++  - python
++  - parsing
++"""
++    path = tmp_path / "case.md"
++    path.write_text(f"---\n{metadata}---\n\n{body}", encoding="utf-8")
++    return path
++
++
++def test_frontmatter_is_parsed(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++    )
++
++    case = parse_error_case(path)
++
++    assert case.id == "err_test"
++    assert case.title == "Test error"
++    assert case.status == "resolved"
++    assert case.tags == ["python", "parsing"]
++
++
++def test_error_content_is_extracted_and_preserves_code_fences(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\n```text\nModuleNotFoundError: dotenv\n```\n\n## Solution\n\ninstall it\n",
++    )
++
++    assert parse_error_case(path).error == "```text\nModuleNotFoundError: dotenv\n```"
++
++
++def test_solution_content_is_extracted(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\n```bash\npip install python-dotenv\n```\n",
++    )
++
++    assert parse_error_case(path).solution == "```bash\npip install python-dotenv\n```"
++
++
++def test_missing_optional_sections_and_metadata_use_defaults(tmp_path: Path) -> None:
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++        frontmatter="id: err_minimal\ntitle: Minimal\nstatus: open\n",
++    )
++
++    case = parse_error_case(path)
++
++    assert case.context == ""
++    assert case.notes == ""
++    assert case.tags == []
++    assert case.language is None
++    assert case.frameworks == []
++
++
++@pytest.mark.parametrize("section", ["Error", "Solution"])
++def test_missing_required_section_raises_value_error(tmp_path: Path, section: str) -> None:
++    included_section = "Solution" if section == "Error" else "Error"
++    path = _write_case(tmp_path, f"## {included_section}\n\ncontent\n")
++
++    with pytest.raises(ValueError, match=rf"## {section}"):
++        parse_error_case(path)
++
++
++@pytest.mark.parametrize("field", ["id", "title", "status"])
++def test_missing_required_frontmatter_field_raises_value_error(
++    tmp_path: Path, field: str
++) -> None:
++    fields = {"id": "err_test", "title": "Test error", "status": "resolved"}
++    del fields[field]
++    frontmatter = "".join(f"{key}: {value}\n" for key, value in fields.items())
++    path = _write_case(
++        tmp_path,
++        "## Error\n\nbroken\n\n## Solution\n\nfixed\n",
++        frontmatter=frontmatter,
++    )
++
++    with pytest.raises(ValueError, match=field):
++        parse_error_case(path)
++
++
++def test_all_sample_error_files_parse() -> None:
++    cases = load_error_cases(ERRORS_DIR)
++
++    assert len(cases) == 3
++    assert {case.id for case in cases} == {
++        "err_20260526_001",
++        "err_20260526_002",
++        "err_20260526_003",
++    }
+
+tokens used
+30,122

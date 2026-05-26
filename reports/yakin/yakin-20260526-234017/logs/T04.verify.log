@@ -1,0 +1,19 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-9.0.3, pluggy-1.6.0 -- /Users/uenoyuuta/Debug_Memory/.venv/bin/python3.13
+cachedir: .pytest_cache
+rootdir: /Users/uenoyuuta/Debug_Memory
+configfile: pyproject.toml
+collecting ... collected 10 items
+
+tests/test_parser.py::test_frontmatter_is_parsed PASSED                  [ 10%]
+tests/test_parser.py::test_error_content_is_extracted_and_preserves_code_fences PASSED [ 20%]
+tests/test_parser.py::test_solution_content_is_extracted PASSED          [ 30%]
+tests/test_parser.py::test_missing_optional_sections_and_metadata_use_defaults PASSED [ 40%]
+tests/test_parser.py::test_missing_required_section_raises_value_error[Error] PASSED [ 50%]
+tests/test_parser.py::test_missing_required_section_raises_value_error[Solution] PASSED [ 60%]
+tests/test_parser.py::test_missing_required_frontmatter_field_raises_value_error[id] PASSED [ 70%]
+tests/test_parser.py::test_missing_required_frontmatter_field_raises_value_error[title] PASSED [ 80%]
+tests/test_parser.py::test_missing_required_frontmatter_field_raises_value_error[status] PASSED [ 90%]
+tests/test_parser.py::test_all_sample_error_files_parse PASSED           [100%]
+
+============================== 10 passed in 0.03s ==============================
