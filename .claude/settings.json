@@ -1,5 +1,5 @@
 {
-  "$comment": "Yakin Agent overnight automation allowlist for Debug_Memory. Pre-approves Codex orchestration, git workflow (excluding force-push and protected branches), GitHub Issue/PR ops, Python/pytest, and Notion MCP. Safety denies block force-push, protected branches, destructive git ops, .env access.",
+  "$comment": "Yakin Agent overnight automation allowlist for Debug_Memory. Pre-approves Codex orchestration, local git workflow (add/commit but NOT push), GitHub Issue/PR ops, Python/pytest, and Notion MCP. All 'git push' variants intentionally require interactive approval. Safety denies block force-push, protected branches, destructive git ops, .env access.",
   "permissions": {
     "allow": [
       "Bash(codex exec:*)",
@@ -8,9 +8,6 @@
       "Bash(./reports/yakin/:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push)",
-      "Bash(git push origin ai/:*)",
-      "Bash(git push -u origin ai/:*)",
       "Bash(git status:*)",
       "Bash(git log:*)",
       "Bash(git diff:*)",
